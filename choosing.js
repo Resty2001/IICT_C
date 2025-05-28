@@ -46,7 +46,6 @@ class Choosing {
         this.animating = false;
         this.selectedIndex = -1;
         this.hoverAngles = new Array(cardList.length).fill(0);
-        // 별 위치 초기화 생략 — 전체 유지하고 싶다면 지우지 말 것
     }
 
     update() {
@@ -60,7 +59,7 @@ class Choosing {
 
         for (let i = 0; i < this.hoverAngles.length; i++) {
             let target = (i === this.hoveredIndex || i === this.selectedIndex) ? PI : 0;
-            this.hoverAngles[i] = lerp(this.hoverAngles[i], target, 0.2);
+            this.hoverAngles[i] = lerp(this.hoverAngles[i], target, 0.07);
         }
     }
 
@@ -89,13 +88,33 @@ class Choosing {
 
             let flipAngle = this.hoverAngles[c];
             let showFront = flipAngle > HALF_PI;
-            let img = showFront ? this.cardImages[c] : this.cardBackImage;
 
             push();
             translate(x + w / 2, y + offsetY + h / 2);
-            scale(cos(flipAngle), 1);
+
+            // 좌우 반전은 하되, 앞면일 때는 다시 원래대로 돌려줌
+            if (!showFront) {
+            scale(cos(flipAngle), 1); // 뒷면만 뒤집기 적용
+            }
+
             tint(255, fadeAmt);
-            image(img, -w / 2, -h / 2, w, h);
+
+            if (showFront) {
+                this.drawCardFront(0, 0, w, h, this.cardImages[c], this.cardList[c]);
+            } else {
+                drawingContext.save();
+                beginShape();
+                rectMode(CENTER);
+                drawingContext.beginPath();
+                drawingContext.roundRect(-w/2, -h/2, w, h, 8); // 둥근 모서리
+                drawingContext.clip();
+
+                // 이미지 그리기 (둥근 테두리 안에만 보임)
+                image(this.cardBackImage, 0, 0, w, h);
+
+                drawingContext.restore();
+            }
+
             noTint();
             pop();
 
@@ -107,6 +126,38 @@ class Choosing {
             noStroke();
             ellipse(star.x, star.y, 30, 30);
         }
+    }
+
+    drawCardFront(x, y, w, h, img, label) {
+        push();
+        translate(x, y);
+
+        // 카드 테두리 (갈색)
+        stroke(160, 120, 80);
+        strokeWeight(4);
+        fill(255);
+        rectMode(CENTER);
+        rect(0, 0, w, h, 8);
+
+        // 이미지
+        noStroke();
+        imageMode(CENTER);
+        image(img, 0, -h * 0.1, w * 0.9, h * 0.7);
+
+        // 하단 텍스트 박스
+        strokeWeight(2);
+        stroke(100,100,220);
+        fill(255);
+        rect(0, h * 0.35, w * 0.9, h * 0.25, 4);
+        noStroke();
+
+        // 텍스트
+        fill(100);
+        textAlign(CENTER, CENTER);
+        textSize(h * 0.1);
+        text(label, 0, h * 0.35);
+
+        pop();
     }
 
     displayText() {

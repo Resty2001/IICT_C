@@ -1,17 +1,18 @@
 let currentIndex = 0;
 let storyText = "";
-let cardBackImage, choosing;
+let cardBackImage, choosing, backGroundImage;
 let imgList = [];
 let cardList = [];
 let cardImages = [];
 let cardSets = [];
 let selectedCard = [];
-let sceneNumber = 0;
+let sceneNumber = 3;
 function preload() {
   for (let i = 0; i <= 7; i++) {
     imgList.push(loadImage("assets/anim" + i + ".png"));
   }
   cardBackImage = loadImage("assets/dog.jpg")
+  backGroundImage = loadImage("assets/Nightsky_Blank.png");
 }
 
 
@@ -35,12 +36,14 @@ function setup() {
   choosing = new Choosing(selectedCard);
   let set = cardSets[currentIndex];
   choosing.set(set.cardList, set.storyText, set.cardImages, cardBackImage);
+  imageMode(CENTER);
 }
 
 function draw() {
   background(255);
   // sceneNumber가 3이면 main game scene (3은 임의의 값 변경 가능능)
   if (sceneNumber === 3){
+    image(backGroundImage, width/2, height/2, windowWidth, windowHeight);
     choosing.update();
     choosing.show();
     choosing.displayText();

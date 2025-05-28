@@ -63,7 +63,7 @@ let keeperAlpha = 0;      // 공방지기 이미지 투명도 (페이드 인 효
 function preload() {
     mainBackground = loadImage('assets/Nightsky_Blank(2).png');
     subBackground = loadImage('assets/subBackground.png');
-    workshopImg = loadImage('assets/workshop.png');
+    workshopImg = loadImage('assets/workshop.png');``
     workshopInsideImg = loadImage('assets/workshopBackground (1).png');
     keeperImg = loadImage('assets/keeperBlank(3).png');
 }
