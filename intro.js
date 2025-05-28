@@ -19,42 +19,46 @@ let workshopRect, dialogueBoxRect, arrowRect, keeperRect;
 let gameState = 'MAIN_MENU'; // 현재 게임 상태 (MAIN_MENU, TRANSITION_TO_INTRO, INTRO)
 let dialogueIndex = 0;       // 현재 대화 순서
 
-// 대화 내용 배열
+// 대화 내용 배열 (수정된 부분)
 const dialogues = [
+    { speaker: "나", text: "계세요...? 저... 실례합니다만..." },
     { speaker: "공방지기", text: "어서 오세요. 당신을 기다리고 있었습니다. 많이 놀라셨을 테지요?" },
-    { speaker: "나", text: "..." },
-    { speaker: "공방지기", text: "당신은 삶의 긴 여정을 마치고 이곳, 영혼들이 머무는 사후세계에 도착했습니다." },
-    { speaker: "나", text: "아... 그렇군요... 그럼 여기는... 대체 뭐하는 곳이죠?" },
-    { speaker: "공방지기", text: "이곳은 '별자리 공방', 이 공방은 아무에게나 모습을 드러내지 않습니다." },
-    { speaker: "공방지기", text: "당신을 그리워하는 이들의 간절한 마음이 모여 비로소 이곳의 불을 밝히지요." },
+    { speaker: "나", text: "여긴... 대체 어디죠? 저는 분명... 눈을 떠보니 낯선 곳에... 별빛이 가득하네요... 전 분명..." },
+    { speaker: "공방지기", text: "당신은 삶의 여정을 마치신 영혼들이 쉬어가는 곳, 사후세계에 도착했습니다." },
+    { speaker: "나", text: "아... 그렇군요... 그럼 저는 역시..." },
+    { speaker: "나", text: "하지만 이곳은... 제가 상상했던 사후세계와는 조금 다른 것 같은데요. 이 반짝이는 것들은 다 뭐죠?" },
+    { speaker: "공방지기", text: "이곳은 '별자리 공방', 이 공방은 아무에게나 모습을 드러내지 않습니다. 당신을 그리워하는 이들의 간절한 마음이 모여 비로소 이곳의 불을 밝히지요." },
     { speaker: "공방지기", text: "당신이 여기 있다는 건, 그만큼 당신이 빛나는 존재였다는 뜻입니다." },
     { speaker: "나", text: "제가... 빛나는 존재였다고요? ...그럼 이 공방에서는 무엇을 하나요?" },
-    { speaker: "공방지기", text: "이곳에서는 당신의 소중한 삶의 조각들을 모아, 밤하늘에 영원히 빛날 이야기를 만든답니다." },
-    { speaker: "공방지기", text: "바로 별자리를 통해서요." },
-    { speaker: "나", text: "그렇군요... 저도 별자리가 될 수 있는 건가요?" },
-    { speaker: "공방지기", text: "네, 그렇습니다. 당신의 삶에는 분명 밤하늘을 수놓을 아름다운 빛이 있었을 겁니다." },
-    { speaker: "공방지기", text: "제가 그 빛들을 모아, 당신만의 영원한 별자리를 만들어 드릴게요." },
-    { speaker: "시스템", text: "인트로 종료. (클릭하여 메인으로)" }
+    { speaker: "공방지기", text: "이곳에서는 당신의 삶, 그 소중한 기억의 조각들을 모읍니다. 당신의 웃음과 눈물, 사랑과 꿈..." },
+    { speaker: "공방지기", text: "그 모든 빛나는 순간들을 모아서, 밤하늘에 영원히 빛날 당신만의 별자리를 만들어 드린답니다." },
+    { speaker: "나", text: "제 삶으로도... 그렇게 아름다운 별자리를 만들 수 있을까요?" },
+    { speaker: "공방지기", text: "물론입니다. 허허. 아무리 평범해 보이는 삶이라도, 그 안에는 반드시 밤하늘을 수놓을 고유한 빛이 있지요." },
+    { speaker: "공방지기", text: "제가 그 빛을 찾도록 도와드릴 테니, 염려 마십시오." },
+    { speaker: "나", text: "저만의 별자리라... 저는 그럼 어떻게 하면 될까요...?" },
+    { speaker: "공방지기", text: "어려울 것 없습니다. 제가 드리는 몇 가지 질문에 당신의 마음이 이끄는 대로 답해주시겠습니까?" },
+    { speaker: "공방지기", text: "각 질문에 제시된 선택지 중, 당신의 삶을 가장 잘 나타낸다고 생각하는 하나를 골라주시면 됩니다." },
+    { speaker: "공방지기", text: "완벽할 필요는 없습니다. 당신의 진실된 이야기가 곧 별이 될 테니까요." }
 ];
 
 // 전환 애니메이션 관련 변수
 let transitionStartTime = 0; // 전환 시작 시간
-let targetScale = 10.0;      // 공방 이미지 확대 배율
+let targetScale = 10.0;       // 공방 이미지 확대 배율
 
 // 하늘 요소 (별, 별자리) 관련 변수
 let constellations = []; // 별자리 데이터 배열
 let generalStars = [];   // 일반 별 데이터 배열
-let skyOffsetX = 0;      // 하늘 요소 전체 가로 이동 오프셋
-let skyOffsetY = 0;      // 하늘 요소 전체 세로 이동 오프셋
+let skyOffsetX = 0;       // 하늘 요소 전체 가로 이동 오프셋
+let skyOffsetY = 0;       // 하늘 요소 전체 세로 이동 오프셋
 
 // 대화 시스템 관련 변수
 let currentCharIndex = 0; // 현재 타이핑된 글자 인덱스
-let isTyping = false;     // 현재 타이핑 중인지 여부
-let lastCharTime = 0;     // 마지막 글자 타이핑된 시간
-let arrowAlpha = 0;       // 대화창 화살표 투명도
+let isTyping = false;       // 현재 타이핑 중인지 여부
+let lastCharTime = 0;       // 마지막 글자 타이핑된 시간
+let arrowAlpha = 0;         // 대화창 화살표 투명도
 
 // 공방지기 등장 관련 변수
-let keeperAlpha = 0;      // 공방지기 이미지 투명도 (페이드 인 효과용)
+let keeperAlpha = 0;         // 공방지기 이미지 투명도 (페이드 인 효과용)
 
 
 // --- p5.js 핵심 함수 ---
@@ -75,7 +79,7 @@ function setup() {
     textAlign(LEFT, TOP); // 텍스트 정렬 기준 설정
     textFont('Malgun Gothic, Apple SD Gothic Neo, sans-serif'); // 기본 한글 폰트 설정
 
-    setupUIElements();        // UI 요소들(공방, 공방지기, 대화창 위치/크기) 설정
+    setupUIElements();       // UI 요소들(공방, 공방지기, 대화창 위치/크기) 설정
     generateConstellations(); // 별자리 데이터 생성
     generateGeneralStars();   // 일반 별 데이터 생성
 }
@@ -88,13 +92,13 @@ function draw() {
     switch (gameState) {
         case 'MAIN_MENU':
             updateSkyMovement(); // 하늘 요소(별, 별자리) 위치 업데이트
-            drawMainMenu();      // 메인 메뉴 화면 그리기
+            drawMainMenu();       // 메인 메뉴 화면 그리기
             break;
         case 'TRANSITION_TO_INTRO':
-            drawTransition();    // 메인 메뉴 -> 인트로 전환 효과 그리기
+            drawTransition();     // 메인 메뉴 -> 인트로 전환 효과 그리기
             break;
         case 'INTRO':
-            drawIntroScene();    // 인트로 장면(공방 내부, 공방지기, 대화) 그리기
+            drawIntroScene();     // 인트로 장면(공방 내부, 공방지기, 대화) 그리기
             break;
     }
 }
@@ -116,8 +120,10 @@ function mousePressed() {
             } else { // 타이핑 완료 후면
                 dialogueIndex++; // 다음 대화로
                 if (dialogueIndex >= dialogues.length) { // 모든 대화 종료 시
-                    gameState = 'MAIN_MENU'; // 메인 메뉴로
+                    // 여기서 'MAIN_MENU'로 돌아가는 대신 다른 상태(예: 'QUESTIONNAIRE')로 전환할 수 있습니다.
+                    gameState = 'MAIN_MENU'; // 임시로 메인 메뉴로
                     dialogueIndex = 0;       // 대화 인덱스 초기화
+                    keeperAlpha = 0;         // 공방지기 알파값 초기화 (메인 메뉴로 돌아갈 때)
                 } else { // 다음 대화 준비
                     currentCharIndex = 0;
                     isTyping = true;
@@ -191,7 +197,7 @@ function drawMainMenu() {
     image(mainBackground, width / 2, height / 2, width, height); // 밤하늘 배경
     drawMovingSkyElements(); // 움직이는 별/별자리 그리기
     image(subBackground, width / 2, height / 2, width, height);  // 지상 배경(나무 등)
-    drawWorkshopGlow();      // 공방 주변 빛 효과
+    drawWorkshopGlow();       // 공방 주변 빛 효과
     image(workshopImg, workshopRect.cx, workshopRect.cy, workshopRect.w, workshopRect.h); // 공방 이미지
 }
 
@@ -204,7 +210,7 @@ function drawMovingSkyElements() {
         for (let j = -1; j <= 1; j++) {
             push();
             translate(i * width, j * height); // 각 격자 위치로 이동
-            drawGeneralStarsSet();  // 일반 별들 그리기
+            drawGeneralStarsSet();   // 일반 별들 그리기
             drawConstellationSet(); // 별자리들 그리기
             pop();
         }
@@ -283,10 +289,10 @@ function drawTransition() {
     // 2. 확대되며 사라지는 공방 외부(workshopImg) 그리기
     push();
     translate(workshopCenterX, workshopCenterY); // 공방 원래 중심으로 이동
-    scale(currentScale);                       // 확대
-    tint(255, alphaOut);                       // 투명도 적용 (점점 사라짐)
+    scale(currentScale);                         // 확대
+    tint(255, alphaOut);                         // 투명도 적용 (점점 사라짐)
     image(workshopImg, 0, 0, workshopRect.w, workshopRect.h); // (0,0)에 그림
-    noTint();                                  // 다른 이미지에 영향 없도록 tint 해제
+    noTint();                                     // 다른 이미지에 영향 없도록 tint 해제
     pop();
 
     // 3. 나타나는 공방 내부(workshopInsideImg) 그리기
@@ -302,7 +308,7 @@ function drawTransition() {
         isTyping = true; // 인트로 시작 시 바로 타이핑 시작
         arrowAlpha = 0;
         lastCharTime = millis();
-        keeperAlpha = 0; // 공방지기 페이드 인 시작
+        keeperAlpha = 0; // 공방지기 페이드 인 시작 (여기서는 0으로 초기화만)
     }
 }
 
@@ -310,11 +316,12 @@ function drawTransition() {
 function drawIntroScene() {
     image(workshopInsideImg, width / 2, height / 2, width, height); // 공방 내부 배경
 
-    // 공방지기 페이드 인 효과
-    if (keeperAlpha < 255) {
+    // 공방지기 등장: 첫 대화(dialogueIndex 0) 이후부터 페이드 인
+    if (dialogueIndex >= 1 && keeperAlpha < 255) {
         keeperAlpha = min(255, keeperAlpha + KEEPER_FADE_IN_SPEED);
     }
-    tint(255, keeperAlpha); // 투명도 적용
+
+    tint(255, keeperAlpha); // 투명도 적용 (0이면 안 보임)
     image(keeperImg, keeperRect.x, keeperRect.y, keeperRect.w, keeperRect.h); // 공방지기
     noTint();
 
@@ -342,9 +349,17 @@ function drawDialogueBox() {
         }
         let textToShow = fullText.substring(0, currentCharIndex); // 현재까지 타이핑된 텍스트
 
-        // 화자 이름 표시
-        fill(255, 215, 0); textSize(40); textAlign(LEFT, TOP); noStroke();
+        // 화자 이름 표시 (색상 변경)
+        textSize(40); textAlign(LEFT, TOP); noStroke();
+        if (currentDialogue.speaker === "나") {
+            fill(255, 215, 0); // '나'는 노란색
+        } else if (currentDialogue.speaker === "공방지기") {
+            fill(255); // '공방지기'는 흰색
+        } else {
+            fill(255, 215, 0); // 기본값 (혹시 모를 경우)
+        }
         text(currentDialogue.speaker + ":", d.x + 40, d.y + 40);
+
         // 대화 내용 표시
         fill(255); textSize(36);
         text(textToShow, d.x + 40, d.y + 100, d.w - 80, d.h - 140); // 자동 줄바꿈 지원
