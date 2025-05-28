@@ -122,7 +122,7 @@ class Choosing {
         }
 
         for (let star of this.starPositions) {
-            fill(255, 255, 0);
+            fill(255, 254, 180);
             noStroke();
             ellipse(star.x, star.y, 30, 30);
         }
@@ -166,7 +166,7 @@ class Choosing {
             this.charIndex++;
         }
 
-        fill(0);
+        fill(255, 254, 180);
         noStroke();
         textSize(this.fontSize);
         textAlign(LEFT, TOP);
