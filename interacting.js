@@ -1,5 +1,5 @@
 let selectedWords = ["새벽 호숫가", "막연한 불안감", "거인들의 산맥", "말하는 신비로운 동물", "절망적인 눈보라", "불굴의 의지", "벼락 맞은 고목나무", "잊혀진 신들의 지도", "장엄한 오로라가 펼쳐진 밤", "영원한 방랑자"];
-let starName, starStory;
+let starName, starMyth;
 let myth;
 let prompt = "";
 let introScene = true;
@@ -23,7 +23,9 @@ async function setup() {
 function draw() {
   background(30);
   text("AI 응답:", 20, 50);
-  text(starName, 20, 80, width - 40);
+  //text(starName, 20, 80, width - 40);
+  text(starMyth, 20, 80, width - 40);
+
 }
 
 async function createName() {
@@ -49,9 +51,11 @@ async function createName() {
 }
 
 async function createMyth() {
-  const prompt = `다음 이야기를 기반으로 3줄 이내의 신화를 생성해줘.
-  절대로 이야기를 단순히 요약하는 방식으로 신화를 만들지 말고 이야기의 맥락과 분위기에 맞춰서
-  어울리는 신화를 새로 만들어줘줘: ${selectedWords.join(", ")}`;
+  const prompt = `다음 단어들은 하나의 신화를 창조하기 위한 영감의 재료일 뿐입니다.  
+절대로 제시된 단어를 이야기에 포함하지 말고고, 단어들의 의미와 분위기를 직관적으로 해석한 뒤  
+그 느낌에 어울리는 신화를 10단어 이내로 간단하게 창작해 주세요.  
+단어를 그대로 나열하거나 단순히 줄거리를 요약하지 말고,  
+상징과 은유를 활용하여 상상력 있는 신화를 만들어 주세요: ${selectedWords.join(", ")}`;
 
   try {
     const res = await fetch("http://localhost:3000/generate", {
