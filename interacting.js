@@ -2,7 +2,6 @@ let selectedWords = ["새벽 호숫가", "막연한 불안감", "거인들의 �
 let starName, starMyth;
 let myth;
 let prompt = "";
-let introScene = true;
 let mainScene, talkingScene, drawStarScene = false;
 
 // function preload(){

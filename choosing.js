@@ -31,6 +31,7 @@ class Choosing {
         this.cardBackImage = null;
 
         this.starPositions = [];
+        this.selectedIndex = -1;
     }
 
     set(cardSet, cardBackImage) {
@@ -44,6 +45,7 @@ class Choosing {
         this.blankIndex = 0;
         this.cardBackImage = cardBackImage;
         this.hoverAngles = new Array(cardSet.blanks[0].options.length).fill(0);
+        this.selectedIndex = -1;
     }
 
     update() {
@@ -81,7 +83,13 @@ show() {
         }
 
         let flipAngle = this.hoverAngles[c];
-        let showFront = flipAngle > HALF_PI;
+let showFront = flipAngle > HALF_PI;
+
+// 애니메이션 중이면 무조건 앞면 표시
+if (this.animating && c === this.selectedIndex) {
+    showFront = true;
+}
+
 
         push();
         translate(x + w / 2, y + offsetY + h / 2);
@@ -189,46 +197,59 @@ show() {
     }
 
     handleMousePressed(callbackForNextSet) {
-        if (this.animating) return;
+    if (this.animating) return;
 
-        for (let card of this.cardRects) {
-            if (
-                mouseX > card.x && mouseX < card.x + card.w &&
-                mouseY > card.y && mouseY < card.y + card.h
-            ) {
-                const currentBlank = this.cardSet.blanks[this.blankIndex];
-                const selectedWord = currentBlank.options[card.index];
+    for (let card of this.cardRects) {
+        if (
+            mouseX > card.x && mouseX < card.x + card.w &&
+            mouseY > card.y && mouseY < card.y + card.h
+        ) {
+            this.selectedIndex = card.index;
+            this.animating = true;
+            this.animationStart = frameCount;
 
+            const currentBlank = this.cardSet.blanks[this.blankIndex];
+            const selectedWord = currentBlank.options[card.index];
+
+            this.selectedCard.push({
+                text: selectedWord,
+                image: currentBlank.images[card.index]
+            });
+
+            // 별 추가
+            let starX = random(windowWidth * 9 / 17, windowWidth * 29 / 30);
+            let starY = random(windowHeight / 8, windowHeight * 7 / 8);
+            this.starPositions.push({ x: starX, y: starY });
+
+            // 2초 후 카드 애니메이션 완료 → 텍스트 삽입
+            setTimeout(() => {
                 const blankPlaceholder = "___";
                 let blankPos = this.storyText.indexOf(blankPlaceholder);
                 if (blankPos !== -1) {
                     this.storyText = this.storyText.slice(0, blankPos) + `[${selectedWord}]` + this.storyText.slice(blankPos + blankPlaceholder.length);
-                    this.displayedText = this.storyText.substring(0, this.charIndex); // 즉시 반영
+                    this.displayedText = this.storyText.substring(0, this.charIndex);
                 }
 
-                this.selectedCard.push({
-                    text: selectedWord,
-                    image: currentBlank.images[card.index]
-                });
-
-                let starX = random(windowWidth * 9 / 17, windowWidth * 29 / 30);
-                let starY = random(windowHeight / 8, windowHeight * 7 / 8);
-                this.starPositions.push({ x: starX, y: starY });
-
+                // 빈칸이 더 있다면 다음 카드 세트로 가지 않고 계속 진행
                 if (this.blankIndex === 0) {
                     this.blankIndex = 1;
                     this.hoverAngles = new Array(this.cardSet.blanks[1].options.length).fill(0);
+                    this.selectedIndex = -1;
+                    this.animating = false;
                 } else {
-                    this.animating = true;
+                    // 문장 완성 후 2초간 보여주고 다음 카드 세트 호출
                     setTimeout(() => {
                         this.animating = false;
+                        this.selectedIndex = -1;
                         callbackForNextSet();
-                    }, 2000);
+                    }, 1500);
                 }
 
-                break;
-            }
+            }, 2000); // 카드 애니메이션 지속 시간
+
+            break;
         }
+    }
     }
 }
 
