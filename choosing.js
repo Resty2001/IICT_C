@@ -119,9 +119,9 @@ if (this.animating && c === this.selectedIndex) {
     }
 
     for (let star of this.starPositions) {
-        fill(255, 254, 180);
+        fill(255);
         noStroke();
-        ellipse(star.x, star.y, 30, 30);
+        ellipse(star.x, star.y, 20, 20);
     }
 }
 

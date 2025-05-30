@@ -1,6 +1,6 @@
 let currentIndex = 0;
 let storyText = "";
-let cardBackImage, choosing, backGroundImage, fadeManager;
+let cardBackImage, choosing, backGroundImage;
 let imgList = [];
 let cardSets = [];
 let selectedCard = [];
@@ -13,7 +13,7 @@ function preload() {
   for (let i = 0; i <= 39; i++) {
     imgList.push(loadImage("assets/anim" + i + ".png"));
   }
-  cardBackImage = loadImage("assets/dog.jpg")
+  cardBackImage = loadImage("assets/card.purple.png")
   backGroundImage = loadImage("assets/Nightsky_Blank.png");
   introImages.mainBackground = loadImage('assets/Nightsky_Blank(2).png');
     introImages.subBackground = loadImage('assets/subBackground.png');

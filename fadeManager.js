@@ -2,65 +2,63 @@ class FadeManager {
   constructor() {
     this.fadeAlpha = 0;
     this.isFading = false;
-    this.fadeSpeed = 10;
-    this.targetScene = null;
+    this.fadeSpeed = 5;
     this.onFadeComplete = null;
-    this.lastSceneFrame = null;
-    this.nextSceneFrame = null;
-    this.transitionReady = false;
-    this.captureNextScene = null;
+
+    this.currentSceneDraw = null;
+    this.nextSceneDraw = null;
+    this.phase = 'idle'; // 'fadingOut' → 'switch' → 'fadingIn'
   }
 
-  startFade(targetScene, captureNextScene, onComplete = null) {
+  startFade(currentSceneDraw, nextSceneDraw, onComplete = null) {
     if (this.isFading) return;
 
     this.isFading = true;
     this.fadeAlpha = 0;
-    this.targetScene = targetScene;
     this.onFadeComplete = onComplete;
-    this.transitionReady = false;
-    this.lastSceneFrame = get(); // 캡처 현재 장면
-    this.captureNextScene = captureNextScene; // 다음 장면 그릴 함수
-    this.nextSceneFrame = null;
+
+    this.currentSceneDraw = currentSceneDraw;
+    this.nextSceneDraw = nextSceneDraw;
+    this.phase = 'fadingOut';
   }
 
-  update(currentSceneSetter) {
+  update() {
     if (!this.isFading) return;
 
-    this.fadeAlpha += this.fadeSpeed;
-    this.fadeAlpha = constrain(this.fadeAlpha, 0, 255);
-
-    // 중간쯤에서 다음 장면 준비
-    if (this.fadeAlpha >= 128 && !this.transitionReady) {
-      if (typeof currentSceneSetter === 'function') {
-        currentSceneSetter(this.targetScene);
+    if (this.phase === 'fadingOut') {
+      this.fadeAlpha += this.fadeSpeed;
+      if (this.fadeAlpha >= 255) {
+        this.fadeAlpha = 255;
+        this.phase = 'switch';
       }
-
-      // 실제로 다음 씬을 한 프레임 그린 후 캡처
-      if (typeof this.captureNextScene === 'function') {
-        this.captureNextScene(); // → draw()에 이 함수 호출되게 해야 함
-        this.nextSceneFrame = get();
+    } else if (this.phase === 'switch') {
+      this.phase = 'fadingIn';
+    } else if (this.phase === 'fadingIn') {
+      this.fadeAlpha -= this.fadeSpeed;
+      if (this.fadeAlpha <= 0) {
+        this.fadeAlpha = 0;
+        this.isFading = false;
+        this.phase = 'idle';
+        if (this.onFadeComplete) this.onFadeComplete();
       }
-
-      this.transitionReady = true;
-    }
-
-    if (this.fadeAlpha >= 255) {
-      this.isFading = false;
-      if (this.onFadeComplete) this.onFadeComplete();
     }
   }
 
-  drawOverlay() {
-    if (!this.isFading || !this.lastSceneFrame || !this.nextSceneFrame) return;
+  draw() {
+    if (!this.isFading) return;
 
-    // 1. 이전 장면 전체 그리기
-    image(this.lastSceneFrame, 0, 0, width, height);
+    // draw current or next scene
+    if (this.phase === 'fadingOut') {
+      if (this.currentSceneDraw) this.currentSceneDraw();
+    } else {
+      if (this.nextSceneDraw) this.nextSceneDraw();
+    }
 
-    // 2. 다음 장면을 fadeAlpha에 비례해 서서히 올리기
+    // overlay fade
     push();
-    tint(255, this.fadeAlpha); // 알파값으로 점점 선명해짐
-    image(this.nextSceneFrame, 0, 0, width, height);
+    noStroke();
+    fill(0, this.fadeAlpha);
+    rect(0, 0, width, height);
     pop();
   }
 
