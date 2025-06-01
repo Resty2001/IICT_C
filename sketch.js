@@ -1,19 +1,27 @@
 let currentIndex = 0;
 let storyText = "";
-let cardBackImage, choosing, backGroundImage;
+let choosing, backGroundImage;
 let imgList = [];
 let cardSets = [];
 let selectedCard = [];
+let cardBackImages = [];
 let sceneNumber = 1;
 let introScene;      
-let introImages = {}; 
+let introImages = {};
+let fade = 0;
+let fadeSpeed = 4;
 
 
 function preload() {
   for (let i = 0; i <= 39; i++) {
     imgList.push(loadImage("assets/anim" + i + ".png"));
   }
-  cardBackImage = loadImage("assets/card.purple.png")
+  cardBackImages = [
+    loadImage("assets/card.green.png"),
+    loadImage("assets/card.purple.png"),
+    loadImage("assets/card.red.png"),
+    loadImage("assets/card.yellow.png")
+  ]
   backGroundImage = loadImage("assets/Nightsky_Blank.png");
   introImages.mainBackground = loadImage('assets/Nightsky_Blank(2).png');
     introImages.subBackground = loadImage('assets/subBackground.png');
@@ -104,7 +112,7 @@ function setup() {
 
   choosing = new Choosing(selectedCard);
   let set = cardSets[currentIndex];
-  choosing.set(set, cardBackImage);
+  choosing.set(set, cardBackImages);
   imageMode(CENTER);
 }
 
@@ -114,10 +122,17 @@ function draw() {
         introScene.draw(); // 인트로 씬 그리기
   } else if (sceneNumber === 2) {
       // 기존 카드 씬 그리기 (배경 이미지가 인트로와 다를 경우 여기서 그려야 함)
-      image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
-      choosing.update();
-      choosing.show();
-      choosing.displayText();
+      if (fade < 255){
+        tint(255,fade);
+        image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+        fade += fadeSpeed;
+      }
+      else {
+        image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+        choosing.update();
+        choosing.show();
+        choosing.displayText();
+      }
   }
     // 다른 씬 번호가 있다면 여기에 추가...
 }
@@ -136,7 +151,7 @@ function mousePressed() {
       let next = ++currentIndex;
       if (next < cardSets.length) {
           let set = cardSets[next];
-          choosing.set(set, cardBackImage);
+          choosing.set(set, cardBackImages);
       } else {
           // 모든 카드 선택 완료 후 다른 씬으로 전환 등
           console.log("모든 카드 선택 완료!");
