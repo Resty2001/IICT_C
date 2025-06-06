@@ -1,3 +1,5 @@
+// sketch.js (이 코드로 파일 전체를 교체해주세요)
+
 let currentIndex = 0;
 let storyText = "";
 let choosing, backGroundImage;
@@ -13,6 +15,17 @@ let fadeSpeed = 4;
 
 
 function preload() {
+    for (let i = 0; i <= 39; i++) {
+        imgList.push(loadImage("assets/anim" + i + ".png"));
+    }
+    cardBackImages = [
+        loadImage("assets/card.green.png"),
+        loadImage("assets/card.purple.png"),
+        loadImage("assets/card.red.png"),
+        loadImage("assets/card.yellow.png")
+    ]
+    backGroundImage = loadImage("assets/Nightsky_Blank.png");
+    introImages.mainBackground = loadImage('assets/Nightsky_Blank(2).png');
     for (let i = 0; i <= 39; i++) {
         imgList.push(loadImage("assets/anim" + i + ".png"));
     }
@@ -41,6 +54,19 @@ function preload() {
     // --- 아웃트로용 이미지 로드 추가 ---
     introImages.qrCode = loadImage('assets/qrTest.png'); 
     introImages.finalConstellationTest = loadImage('assets/finalConstellationTest.jpg'); 
+
+    // --- 공방지기 이미지들 ---
+    introImages.keeper_normal = loadImage('assets/keeper1.png');
+    introImages.keeper_smile1 = loadImage('assets/keepersmile1.png');
+    introImages.keeper_smile2 = loadImage('assets/keepersmile2.png');
+    introImages.keeper_surprised1 = loadImage('assets/keepersurprised1.png');
+    introImages.keeper_talk1 = loadImage('assets/keepertalk1.png');
+    introImages.keeper_talk2 = loadImage('assets/keepertalk2.png');
+    introImages.keeper_talk3 = loadImage('assets/keepertalk3.png');
+    
+    // --- 아웃트로용 이미지 로드 추가 ---
+    introImages.qrCode = loadImage('assets/qrTest.png'); 
+    introImages.finalConstellationTest = loadImage('assets/finalConstellationTest.jpg'); 
 }
 
 
@@ -48,7 +74,28 @@ function setup() {
     createCanvas(windowWidth, windowHeight);
     textFont("sans-serif");
     
+    createCanvas(windowWidth, windowHeight);
+    textFont("sans-serif");
+    
     const goNextScene = () => {
+        sceneNumber = 2;
+        currentIndex = 0;
+        selectedCard = [];
+        choosing.set(cardSets[currentIndex], cardBackImages);
+        fade = 0;
+    };
+
+    const returnToStart = () => {
+        sceneNumber = 1;
+        if(introScene) introScene.reset();
+    };
+
+    // --- 각 씬 객체 생성 ---
+    introScene = new IntroScene(introImages, goNextScene);
+    
+    // ★★★ 이 부분만 수정되었습니다 ★★★
+    // OutroScene은 첫 번째 인자로 모든 이미지를 받으므로, 두 번째 인자는 필요 없습니다.
+    outroScene = new OutroScene(introImages, returnToStart);
         sceneNumber = 2;
         currentIndex = 0;
         selectedCard = [];
@@ -114,9 +161,31 @@ function setup() {
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
     imageMode(CENTER);
+    choosing = new Choosing(selectedCard);
+    let set = cardSets[currentIndex];
+    choosing.set(set, cardBackImages);
+    imageMode(CENTER);
 }
 
 function draw() {
+    background(255);
+    if (sceneNumber === 1) {
+        introScene.draw();
+    } else if (sceneNumber === 2) {
+        if (fade < 255) {
+            tint(255, fade);
+            image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+            noTint();
+            fade += fadeSpeed;
+        } else {
+            image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+            choosing.update();
+            choosing.show();
+            choosing.displayText();
+        }
+    } else if (sceneNumber === 3) {
+        outroScene.draw();
+    }
     background(255);
     if (sceneNumber === 1) {
         introScene.draw();
@@ -143,9 +212,30 @@ function mouseMoved() {
     } else if (sceneNumber === 3) {
         outroScene.handleMouseMoved();
     }
+    if (sceneNumber === 2 && choosing) {
+        choosing.handleMouseMoved();
+    } else if (sceneNumber === 3) {
+        outroScene.handleMouseMoved();
+    }
 }
 
 function mousePressed() {
+    if (sceneNumber === 1) {
+        introScene.handleMousePressed();
+    } else if (sceneNumber === 2 && choosing) {
+        choosing.handleMousePressed(() => {
+            let next = ++currentIndex;
+            if (next < cardSets.length) {
+                let set = cardSets[next];
+                choosing.set(set, cardBackImages);
+            } else {
+                console.log("모든 카드 선택 완료!");
+                sceneNumber = 3;
+            }
+        });
+    } else if (sceneNumber === 3) {
+        outroScene.handleMousePressed();
+    }
     if (sceneNumber === 1) {
         introScene.handleMousePressed();
     } else if (sceneNumber === 2 && choosing) {
@@ -168,6 +258,11 @@ function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
     if (introScene) {
         introScene.handleWindowResized();
+    }
+    if (outroScene) {
+        outroScene.handleWindowResized();
+    }
+}
     }
     if (outroScene) {
         outroScene.handleWindowResized();
