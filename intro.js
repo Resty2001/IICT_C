@@ -1,11 +1,12 @@
+// IntroScene.js (이 코드로 파일 전체를 교체해주세요)
+
 class IntroScene {
     // --- 생성자 ---
     constructor(images, onComplete) {
-        // 이미지 에셋 & 완료 콜백 저장
         this.images = images;
-        this.onComplete = onComplete; // 씬이 끝났을 때 호출될 함수
+        this.onComplete = onComplete;
 
-        // --- 상수 정의 (클래스 내부로 이동) ---
+        // --- 상수 정의 ---
         this.ORIGINAL_WIDTH = 1920;
         this.ORIGINAL_HEIGHT = 1080;
         this.TRANSITION_DURATION = 3000;
@@ -14,8 +15,8 @@ class IntroScene {
         this.NUM_GENERAL_STARS = 250;
         this.TYPING_SPEED = 50;
         this.ARROW_FADE_SPEED = 10;
-        this.KEEPER_FADE_IN_SPEED = 7;
-        this.TEXT_BOX_ALPHA = 220; // --- ★★★ 수정: 텍스트 박스 투명도 설정 (0~255) ★★★ ---
+        this.TEXT_BOX_ALPHA = 220;
+        this.KEEPER_FADE_DURATION = 500;
 
         // --- UI 요소 위치/크기 정보 ---
         this.workshopRect = {};
@@ -29,24 +30,24 @@ class IntroScene {
 
         // --- 대화 내용 배열 ---
         this.dialogues = [
-            { speaker: "나", text: "계세요...? 저... 실례합니다만..." },
-            { speaker: "공방지기", text: "어서 오세요. 당신을 기다리고 있었습니다. 많이 놀라셨을 테지요?" },
-            { speaker: "나", text: "여긴... 대체 어디죠? 저는 분명... 눈을 떠보니 낯선 곳에... 별빛이 가득하네요..." },
-            { speaker: "공방지기", text: "당신은 삶의 여정을 마친 영혼들이 쉬어가는 곳, 사후세계에 도착했습니다." },
-            { speaker: "나", text: "아... 그렇군요... 그럼 저는 역시..." },
-            { speaker: "나", text: "하지만 이곳은... 제가 상상했던 사후세계와는 조금 다른 것 같은데요. 이 반짝이는 것들은 다 뭐죠?" },
-            { speaker: "공방지기", text: "이곳은 '별자리 공방', 이 공방은 아무에게나 모습을 드러내지 않습니다. 당신을 그리워하는 이들의 간절한 마음이 모여 비로소 이곳의 불을 밝히지요." },
-            { speaker: "공방지기", text: "당신이 여기 있다는 건, 그만큼 당신이 빛나는 존재였다는 뜻입니다." },
-            { speaker: "나", text: "제가... 빛나는 존재였다고요? ...그럼 이 공방에서는 무엇을 하나요?" },
-            { speaker: "공방지기", text: "이곳에서는 당신의 삶, 그 소중한 기억의 조각들을 모읍니다. 당신의 웃음과 눈물, 사랑과 꿈..." },
-            { speaker: "공방지기", text: "그 모든 빛나는 순간들을 모아서, 밤하늘에 영원히 빛날 당신만의 별자리를 만들어 드린답니다." },
-            { speaker: "나", text: "제 삶으로도... 그렇게 아름다운 별자리를 만들 수 있을까요?" },
-            { speaker: "공방지기", text: "물론입니다. 허허. 아무리 평범해 보이는 삶이라도, 그 안에는 반드시 밤하늘을 수놓을 고유한 빛이 있지요." },
-            { speaker: "공방지기", text: "제가 그 빛을 찾도록 도와드릴 테니, 염려 마십시오." },
-            { speaker: "나", text: "저만의 별자리라... 저는 그럼 어떻게 하면 될까요...?" },
-            { speaker: "공방지기", text: "어려울 것 없습니다. 제가 드리는 몇 가지 질문에 당신의 마음이 이끄는 대로 답해주시겠습니까?" },
-            { speaker: "공방지기", text: "각 질문에 제시된 선택지 중, 당신의 삶을 가장 잘 나타낸다고 생각하는 하나를 골라주시면 됩니다." },
-            { speaker: "공방지기", text: "완벽할 필요는 없습니다. 당신의 진실된 이야기가 곧 별이 될 테니까요." }
+            { speaker: "나", text: "계세요...? 저... 실례합니다만...", image: null },
+            { speaker: "공방지기", text: "어서 오세요. 당신을 기다리고 있었습니다. 많이 놀라셨을 테지요?", image: 'keeper_normal' },
+            { speaker: "나", text: "여긴... 대체 어디죠? 저는 분명... 눈을 떠보니 낯선 곳에... 별빛이 가득하네요...", image: null },
+            { speaker: "공방지기", text: "당신은 삶의 여정을 마친 영혼들이 쉬어가는 곳, 사후세계에 도착했습니다.", image: 'keeper_normal' },
+            { speaker: "나", text: "아... 그렇군요... 그럼 저는 역시...", image: null },
+            { speaker: "나", text: "하지만 이곳은... 제가 상상했던 사후세계와는 조금 다른 것 같은데요. 이 반짝이는 것들은 다 뭐죠?", image: null },
+            { speaker: "공방지기", text: "이곳은 '별자리 공방', 이 공방은 아무에게나 모습을 드러내지 않습니다. 당신을 그리워하는 이들의 간절한 마음이 모여 비로소 이곳의 불을 밝히지요.", image: 'keeper_talk1' },
+            { speaker: "공방지기", text: "당신이 여기 있다는 건, 그만큼 당신이 빛나는 존재였다는 뜻입니다.", image: 'keeper_talk1' },
+            { speaker: "나", text: "제가... 빛나는 존재였다고요? ...그럼 이 공방에서는 무엇을 하나요?", image: null },
+            { speaker: "공방지기", text: "이곳에서는 당신의 삶, 그 소중한 기억의 조각들을 모읍니다. 당신의 웃음과 눈물, 사랑과 꿈...", image: 'keeper_smile2' },
+            { speaker: "공방지기", text: "그 모든 빛나는 순간들을 모아서, 밤하늘에 영원히 빛날 당신만의 별자리를 만들어 드린답니다.", image: 'keeper_smile2' },
+            { speaker: "나", text: "제 삶으로도... 그렇게 아름다운 별자리를 만들 수 있을까요?", image: null },
+            { speaker: "공방지기", text: "물론입니다. 허허. 아무리 평범해 보이는 삶이라도, 그 안에는 반드시 밤하늘을 수놓을 고유한 빛이 있지요.", image: 'keeper_talk3' },
+            { speaker: "공방지기", text: "제가 그 빛을 찾도록 도와드릴 테니, 염려 마십시오.", image: 'keeper_talk3' },
+            { speaker: "나", text: "저만의 별자리라... 저는 그럼 어떻게 하면 될까요...?", image: null },
+            { speaker: "공방지기", text: "어려울 것 없습니다. 제가 드리는 몇 가지 질문에 당신의 마음이 이끄는 대로 답해주시겠습니까?", image: 'keeper_talk2' },
+            { speaker: "공방지기", text: "각 질문에 제시된 선택지 중, 당신의 삶을 가장 잘 나타낸다고 생각하는 하나를 골라주시면 됩니다.", image: 'keeper_talk2' },
+            { speaker: "공방지기", text: "완벽할 필요는 없습니다. 당신의 진실된 이야기가 곧 별이 될 테니까요.", image: 'keeper_smile2' }
         ];
 
         // --- 기타 변수 ---
@@ -62,26 +63,30 @@ class IntroScene {
         this.isTyping = false;
         this.lastCharTime = 0;
         this.arrowAlpha = 0;
-        this.keeperAlpha = 0;
+
+        // --- 공방지기 이미지 상태 관리 변수 ---
+        this.currentKeeperImg = null;
+        this.previousKeeperImg = null;
+        this.keeperFadeStartTime = 0;
+        this.lastKeeperImgKey = null;
 
         // --- 초기 설정 호출 ---
         this.setup();
-    }
 
-    // ... (setup, draw, handleMousePressed, handleWindowResized, setupUIElements, generateConstellations, generateGeneralStars, updateSkyMovement, drawMainMenu, drawMovingSkyElements, drawGeneralStarsSet, drawConstellationSet, drawWorkshopGlow, drawTransition, drawIntroScene 함수는 이전과 동일) ...
+        
+    }
 
     setup() {
         imageMode(CENTER);
         textAlign(LEFT, TOP);
         textFont('Malgun Gothic, Apple SD Gothic Neo, sans-serif');
-
         this.constellationMoveSpeedX = width * this.CONSTELLATION_MOVE_SPEED_X_RATIO;
         this.constellationMoveSpeedY = height * this.CONSTELLATION_MOVE_SPEED_Y_RATIO;
-
         this.setupUIElements();
         this.generateConstellations();
         this.generateGeneralStars();
     }
+
     draw() {
         background(0);
         switch (this.gameState) {
@@ -97,6 +102,8 @@ class IntroScene {
                 break;
         }
     }
+
+    
     handleMousePressed() {
         if (this.gameState === 'MAIN_MENU') {
             if (this.isMouseOver(this.workshopRect)) {
@@ -116,8 +123,22 @@ class IntroScene {
                         }
                         this.gameState = 'MAIN_MENU';
                         this.dialogueIndex = 0;
-                        this.keeperAlpha = 0;
+                        this.currentKeeperImg = null;
+                        this.previousKeeperImg = null;
+                        this.lastKeeperImgKey = null;
                     } else {
+                        const currentDialogue = this.dialogues[this.dialogueIndex];
+
+                        if (currentDialogue.speaker === '공방지기') {
+                            const newImgKey = currentDialogue.image;
+                            if (newImgKey !== this.lastKeeperImgKey) {
+                                this.previousKeeperImg = this.images[this.lastKeeperImgKey];
+                                this.currentKeeperImg = this.images[newImgKey];
+                                this.keeperFadeStartTime = millis();
+                                this.lastKeeperImgKey = newImgKey;
+                            }
+                        }
+
                         this.currentCharIndex = 0;
                         this.isTyping = true;
                         this.arrowAlpha = 0;
@@ -127,6 +148,7 @@ class IntroScene {
             }
         }
     }
+
     handleWindowResized() {
         this.constellationMoveSpeedX = width * this.CONSTELLATION_MOVE_SPEED_X_RATIO;
         this.constellationMoveSpeedY = height * this.CONSTELLATION_MOVE_SPEED_Y_RATIO;
@@ -136,6 +158,7 @@ class IntroScene {
         this.skyOffsetX = 0;
         this.skyOffsetY = 0;
     }
+
     setupUIElements() {
         let scaleX = width / this.ORIGINAL_WIDTH;
         let scaleY = height / this.ORIGINAL_HEIGHT;
@@ -162,6 +185,7 @@ class IntroScene {
         let arrowSize = 40 * Math.min(scaleX, scaleY);
         this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (80 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (80 * scaleY), w: arrowSize, h: arrowSize };
     }
+
     generateConstellations() {
         const originalConstellations = [
              { stars: [[200, 150], [300, 180], [400, 160], [500, 200], [480, 280], [400, 300], [350, 250]], connections: [[0, 1], [1, 2], [2, 3], [3, 4], [3, 6], [5, 6]] },
@@ -187,6 +211,7 @@ class IntroScene {
             this.constellations.push(newConstellation);
         }
     }
+
     generateGeneralStars() {
         this.generalStars = [];
         let scale = Math.min(width / this.ORIGINAL_WIDTH, height / this.ORIGINAL_HEIGHT);
@@ -194,19 +219,22 @@ class IntroScene {
             this.generalStars.push({ x: random(0, width), y: random(0, height), size: random(1, 3.5) * scale, alpha: random(80, 200) });
         }
     }
+
     updateSkyMovement() {
         this.skyOffsetX += this.constellationMoveSpeedX;
         this.skyOffsetY += this.constellationMoveSpeedY;
         this.skyOffsetX = (this.skyOffsetX % width + width) % width;
         this.skyOffsetY = (this.skyOffsetY % height + height) % height;
     }
+
     drawMainMenu() {
-        if(this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
+        if (this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
         this.drawMovingSkyElements();
-        if(this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
+        if (this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
         this.drawWorkshopGlow();
-        if(this.images.workshopImg) image(this.images.workshopImg, this.workshopRect.cx, this.workshopRect.cy, this.workshopRect.w, this.workshopRect.h);
+        if (this.images.workshopImg) image(this.images.workshopImg, this.workshopRect.cx, this.workshopRect.cy, this.workshopRect.w, this.workshopRect.h);
     }
+
     drawMovingSkyElements() {
         push();
         translate(this.skyOffsetX, this.skyOffsetY);
@@ -221,6 +249,7 @@ class IntroScene {
         }
         pop();
     }
+
     drawGeneralStarsSet() {
         noStroke();
         for (let star of this.generalStars) {
@@ -228,6 +257,7 @@ class IntroScene {
             ellipse(star.x, star.y, star.size, star.size);
         }
     }
+
     drawConstellationSet() {
         let scale = Math.min(width / this.ORIGINAL_WIDTH, height / this.ORIGINAL_HEIGHT);
         for (let constellation of this.constellations) {
@@ -244,6 +274,7 @@ class IntroScene {
             }
         }
     }
+
     drawWorkshopGlow() {
         let cx = this.workshopRect.cx; let cy = this.workshopRect.cy; let baseW = this.workshopRect.w;
         let d = dist(mouseX, mouseY, cx, cy);
@@ -265,6 +296,7 @@ class IntroScene {
             }
         }
     }
+
     drawTransition() {
         let elapsedTime = millis() - this.transitionStartTime;
         let progress = constrain(elapsedTime / this.TRANSITION_DURATION, 0, 1);
@@ -275,14 +307,14 @@ class IntroScene {
         let workshopCenterX = this.workshopRect.cx;
         let workshopCenterY = this.workshopRect.cy;
 
-        if(this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
-        if(this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
+        if (this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
+        if (this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
 
         push();
         translate(workshopCenterX, workshopCenterY);
         scale(currentScale);
         tint(255, alphaOut);
-        if(this.images.workshopImg) image(this.images.workshopImg, 0, 0, this.workshopRect.w / currentScale, this.workshopRect.h / currentScale);
+        if (this.images.workshopImg) image(this.images.workshopImg, 0, 0, this.workshopRect.w / currentScale, this.workshopRect.h / currentScale);
         noTint();
         pop();
 
@@ -291,7 +323,6 @@ class IntroScene {
             let canvasRatio = width / height;
             let imgRatio = bgImg.width / bgImg.height;
             let imgW, imgH;
-
             if (canvasRatio > imgRatio) {
                 imgW = width;
                 imgH = imgW / imgRatio;
@@ -316,66 +347,92 @@ class IntroScene {
             this.isTyping = true;
             this.arrowAlpha = 0;
             this.lastCharTime = millis();
-            this.keeperAlpha = 0;
-        }
-    }
-    drawIntroScene() {
-        let bgImg = this.images.workshopInsideImg;
-        if (bgImg && bgImg.width > 0) {
-            let canvasRatio = width / height;
-            let imgRatio = bgImg.width / bgImg.height;
-            let imgW, imgH;
-
-            if (canvasRatio > imgRatio) {
-                imgW = width;
-                imgH = imgW / imgRatio;
+            
+            const firstDialogue = this.dialogues[0];
+            const firstImgKey = firstDialogue.speaker === '공방지기' ? firstDialogue.image : null;
+            if (firstImgKey) {
+                this.currentKeeperImg = this.images[firstImgKey];
+                this.previousKeeperImg = null;
+                this.keeperFadeStartTime = millis();
+                this.lastKeeperImgKey = firstImgKey;
             } else {
-                imgH = height;
-                imgW = imgH * imgRatio;
+                this.currentKeeperImg = null;
+                this.previousKeeperImg = null;
+                this.lastKeeperImgKey = null;
             }
-            image(bgImg, width / 2, height / 2, imgW, imgH);
-        } else {
-            background(10, 0, 20);
-            fill(255);
-            textAlign(CENTER, CENTER);
-            text("배경 이미지 로딩 중...", width / 2, height / 2);
-            textAlign(LEFT, TOP);
         }
-
-        if (this.dialogueIndex >= 1 && this.keeperAlpha < 255) {
-            this.keeperAlpha = min(255, this.keeperAlpha + this.KEEPER_FADE_IN_SPEED);
-        }
-        tint(255, this.keeperAlpha);
-        if (this.images.keeperImg) {
-            image(this.images.keeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
-        }
-        noTint();
-
-        this.drawDialogueBox();
     }
 
+// IntroScene.js 파일에서 이 함수를 찾아 교체해주세요.
 
-    // --- 대화창 그리기 (수정됨) ---
+drawIntroScene() {
+    let bgImg = this.images.workshopInsideImg;
+    if (bgImg && bgImg.width > 0) {
+        let canvasRatio = width / height;
+        let imgRatio = bgImg.width / bgImg.height;
+        let imgW, imgH;
+        if (canvasRatio > imgRatio) {
+            imgW = width;
+            imgH = imgW / imgRatio;
+        } else {
+            imgH = height;
+            imgW = imgH * imgRatio;
+        }
+        image(bgImg, width / 2, height / 2, imgW, imgH);
+    } else {
+        background(10, 0, 20);
+        fill(255);
+        textAlign(CENTER, CENTER);
+        text("배경 이미지 로딩 중...", width / 2, height / 2);
+        textAlign(LEFT, TOP);
+    }
+    
+    let fadeElapsedTime = millis() - this.keeperFadeStartTime;
+    let fadeProgress = constrain(fadeElapsedTime / this.KEEPER_FADE_DURATION, 0, 1);
+
+    if (fadeProgress >= 1) {
+        this.previousKeeperImg = null;
+    }
+
+    // 사라지는 이전 이미지 그리기
+    if (this.previousKeeperImg) {
+        let alphaOut = lerp(255, 0, fadeProgress);
+        tint(255, alphaOut);
+        image(this.previousKeeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
+        noTint();
+    }
+
+    // 나타나는 현재 이미지 그리기
+    if (this.currentKeeperImg) {
+        // ★★★ 바로 이 부분이 수정되었습니다! ★★★
+        // 이전 이미지가 있든 없든, 페이드가 시작되면 항상 0부터 투명도를 올립니다.
+        let alphaIn = lerp(0, 255, fadeProgress);
+        
+        tint(255, alphaIn);
+        image(this.currentKeeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
+        noTint();
+    }
+    
+    this.drawDialogueBox();
+}
+    
     drawDialogueBox() {
         let d = this.dialogueBoxRect;
         let scaleX = width / this.ORIGINAL_WIDTH;
         let scaleY = height / this.ORIGINAL_HEIGHT;
         let avgScale = (scaleX + scaleY) / 2;
 
-        // --- 수정: 사각형 대신 이미지 사용 ---
         if (this.images.textBox) {
-            tint(255, this.TEXT_BOX_ALPHA); // --- ★★★ 수정: 투명도 적용 ★★★ ---
+            tint(255, this.TEXT_BOX_ALPHA);
             image(this.images.textBox, d.x + d.w / 2, d.y + d.h / 2, d.w, d.h);
-            noTint(); // --- ★★★ 수정: 틴트 해제 ★★★ ---
-        } else { // 이미지가 로드되지 않았을 경우 대비
+            noTint();
+        } else {
             fill(0, 0, 0, 180); stroke(255); strokeWeight(3 * avgScale);
-            rectMode(CORNER); // rect 그릴때는 CORNER로
+            rectMode(CORNER);
             rect(d.x, d.y, d.w, d.h, 15 * avgScale);
-            imageMode(CENTER); // 다시 CENTER로
+            imageMode(CENTER);
         }
-        // --- 수정 끝 ---
-
-
+        
         if (this.dialogueIndex < this.dialogues.length) {
             let currentDialogue = this.dialogues[this.dialogueIndex];
             let fullText = currentDialogue.text;
@@ -392,10 +449,8 @@ class IntroScene {
 
             let speakerTextSize = 40 * avgScale;
             let dialogueTextSize = 36 * avgScale;
-            // --- ★★★ 수정: 텍스트 패딩 조정 (오른쪽으로 이동) ★★★ ---
-            let paddingX = 100 * scaleX; // 좌우 패딩 (70 -> 100)
-            let paddingY = 70 * scaleY; // 상하 패딩 (기존 값 유지)
-            // --- ★★★ 수정 끝 ★★★ ---
+            let paddingX = 100 * scaleX;
+            let paddingY = 70 * scaleY;
 
             textSize(speakerTextSize); textAlign(LEFT, TOP); noStroke();
             fill(currentDialogue.speaker === "나" ? color(255, 215, 0) : color(255));
@@ -419,11 +474,22 @@ class IntroScene {
         }
     }
 
-    // --- 마우스 오버 확인 유틸리티 ---
     isMouseOver(rectObj) {
         let rX = rectObj.x !== undefined ? rectObj.x : rectObj.cx - rectObj.w / 2;
         let rY = rectObj.y !== undefined ? rectObj.y : rectObj.cy - rectObj.h / 2;
         return (mouseX >= rX && mouseX <= rX + rectObj.w &&
                 mouseY >= rY && mouseY <= rY + rectObj.h);
     }
+    
+    reset() {
+    this.gameState = 'MAIN_MENU';
+    this.dialogueIndex = 0;
+    // 필요한 다른 변수들도 여기서 초기화해줍니다.
+    this.currentKeeperImg = null;
+    this.previousKeeperImg = null;
+    this.lastKeeperImgKey = null;
+    this.skyOffsetX = 0;
+    this.skyOffsetY = 0;
 }
+}
+
