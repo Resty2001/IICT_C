@@ -49,9 +49,15 @@ function createParticleManager() {
 }
 
 const particleManager = createParticleManager();
+  const texts = [
+    "자, 그럼 당신의 이야기부터 시작해볼까요?\n당신의 이야기가 시작된 탄생의 빛은 어떤 풍경이었나요?\n당신의 유년의 빛은 어떤 기억으로 반짝였나요?",
+    "당신의 삶에서 가장 빛나는 성장의 빛은 어떤 가치와 시련 속에서 피어났을까요?\n당신에게 가장 큰 가치는 무엇이었고, 또 가장 넘기 힘들었던 시련은 무엇이었나요?",
+    "이제 마지막입니다.\n당신의 육신은 어디에 잠들었나요?\n또 당신을 그리는 이들에게 어떤 마지막 빛을 전하고 싶으신가요?",
+    "이야기를 모두 선택하셨습니다. 이제 별을 이으러 가시죠."
+  ];
 
 class Choosing {
-    constructor(selectedCard) {
+    constructor(selectedCard, keeperImages, textBox) {
         this.cardSet = null;
         this.storyText = "";
         this.selectedCard = selectedCard || [];
@@ -84,6 +90,17 @@ class Choosing {
         this.selectedIndex = -1;
 
         this.animatingCard = null;
+
+        this.keeperImages = keeperImages;
+        this.keeperState = null;
+        this.keeperAlpha = 0;
+        this.keeperFadeInSpeed = 2;
+
+        this.showKeeperTextBox = false;
+        this.keeperTextBoxClicked = false;
+        this.textBox = textBox;
+        this.keeperText = "";
+        this.keeperIndex = 0;
     }
 
     set(cardSet, cardBackImages) {
@@ -99,6 +116,12 @@ class Choosing {
         this.hoverAngles = new Array(cardSet.blanks[0].options.length).fill(0);
         this.selectedIndex = -1;
         this.animatingCard = null;
+        this.keeperIndex = 0;
+        this.keeperText = "";
+        if (this.selectedCard.length === 0){
+            this.keeperState = "showing";
+            this.keeperAlpha = 0;
+        }
     }
 
     update() {
@@ -122,8 +145,20 @@ class Choosing {
         let currentBlank = this.cardSet.blanks[this.blankIndex];
         let options = currentBlank.options;
         let images = currentBlank.images;
+          const idx = this.selectedCard.length / 2;
 
         this.cardRects = [];
+            if (this.keeperState != "done") {
+      if (this.keeperState === "showing") {
+        this.keeperAlpha = min(255, this.keeperAlpha + this.keeperFadeInSpeed);
+        if (this.keeperAlpha === 255 && this.keeperText === texts[idx]) {
+          this.keeperState = "waiting";
+        }
+      }
+      this.drawKeeperInteraction();
+      return; // ⭐ 카드 UI는 렌더링하지 않음
+    }
+
 
         for (let c = 0; c < options.length; c++) {
             let x = windowWidth / 30 + windowWidth / 9 * c;
@@ -185,25 +220,25 @@ class Choosing {
         }
 
         for (let star of this.starPositions) {
-    push();
-    translate(star.x, star.y);
+            push();
+            translate(star.x, star.y);
 
-    // Draw the core star
-    noStroke();
-    fill(255, star.alpha);
-    ellipse(0, 0, 10);
+            // Draw the core star
+            noStroke();
+            fill(255, star.alpha);
+            ellipse(0, 0, 10);
 
-    // Glow effect
-    if (star.alpha === 255) {
-        let glowSize = 10 + sin(star.sparkleTimer * 0.3) * 5;
-        stroke(255, 255, 255, 100 + 50 * sin(star.sparkleTimer * 0.4));
-        strokeWeight(1.5);
-        noFill();
-        ellipse(0, 0, glowSize * 2, glowSize * 1.5);
-        ellipse(0, 0, glowSize * 1.2, glowSize * 2.3);
-    }
+            // Glow effect
+            if (star.alpha === 255) {
+                let glowSize = 10 + sin(star.sparkleTimer * 0.3) * 5;
+                stroke(255, 255, 255, 100 + 50 * sin(star.sparkleTimer * 0.4));
+                strokeWeight(1.5);
+                noFill();
+                ellipse(0, 0, glowSize * 2, glowSize * 1.5);
+                ellipse(0, 0, glowSize * 1.2, glowSize * 2.3);
+            }
 
-    pop();
+            pop();
 }
 
 particleManager.updateAndShow();
@@ -232,9 +267,46 @@ particleManager.updateAndShow();
 
         pop();
     }
+   drawKeeperInteraction() {
+  const idx = this.selectedCard.length / 2; // 0, 1, 2, 3
+  const keeper = this.keeperImages[idx];
+
+  // keeper 이미지 (페이드인)
+  push();
+  tint(255, this.keeperAlpha);
+  imageMode(CENTER);
+  image(keeper, windowWidth / 2, windowHeight /2, windowWidth / 3, windowHeight * 10/11);
+  pop();
+
+  // 텍스트 박스
+  const boxWidth = windowWidth * 18 / 19;
+  const boxHeight = windowHeight / 4;
+  const boxX = windowWidth / 2;
+  const boxY = windowHeight - boxHeight / 2 - 50;
+
+  imageMode(CENTER);
+  image(this.textBox, boxX, boxY, boxWidth, boxHeight);
+
+  // 텍스트 출력
+  const textX = windowWidth/13;
+  const textY = windowHeight - boxHeight*9/10;
+  if (frameCount % this.interval === 0 && this.keeperIndex < texts[idx].length) {
+            this.keeperText += texts[idx][this.keeperIndex];
+            this.keeperIndex++;
+        }
+
+  fill(255, this.keeperAlpha);
+  noStroke();
+  textSize(this.fontSize); // 약간 줄임
+  textAlign(LEFT, TOP);
+  let wrapped = this.wrapText(this.keeperText, boxWidth - 40);
+  text(wrapped, textX, textY);
+}
+
 
     displayText() {
-        if (frameCount % this.interval === 0 && this.charIndex < this.storyText.length) {
+        if (this.keeperState === "done"){
+            if (frameCount % this.interval === 0 && this.charIndex < this.storyText.length) {
             this.displayedText += this.storyText[this.charIndex];
             this.charIndex++;
         }
@@ -247,6 +319,7 @@ particleManager.updateAndShow();
         let wrapped = this.wrapText(this.displayedText, this.boxW);
         text(wrapped, this.boxX, this.boxY);
     }
+        }
 
     wrapText(txt, maxWidth) {
         let words = txt.split('');
@@ -281,6 +354,11 @@ particleManager.updateAndShow();
     
 
     handleMousePressed(callbackForNextSet) {
+    if (this.keeperState === "waiting") {
+        this.keeperAlpha = 0;
+        this.keeperState = "done";
+        return;
+    }
         if (this.animating) return;
 
         for (let card of this.cardRects) {
@@ -351,6 +429,7 @@ particleManager.updateAndShow();
                         this.animating = false;
                     } else {
                         setTimeout(() => {
+                            this.keeperState = "showing";
                             this.animating = false;
                             this.selectedIndex = -1;
                             callbackForNextSet();
