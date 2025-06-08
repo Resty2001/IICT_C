@@ -26,9 +26,11 @@ function preload() {
     keeperImage = loadImage('assets/grandpa.first.png')
     backGroundImage = loadImage("assets/Nightsky_Blank.png");
     introImages.mainBackground = loadImage('assets/Nightsky_Blank(2).png');
+    introImages.mainBackground2 = loadImage('assets/Nightsky_Blank.png');
     introImages.subBackground = loadImage('assets/subBackground.png');
     introImages.workshopImg = loadImage('assets/workshop.png');
     introImages.workshopInsideImg = loadImage('assets/workshopBackground (1).png');
+    introImages.workshopInsideImg2 = loadImage('assets/workshopBackground (3).png');
     introImages.textBox = loadImage('assets/textBox.png');
 
     // --- 공방지기 이미지들 ---
@@ -43,6 +45,7 @@ function preload() {
     // --- 아웃트로용 이미지 로드 추가 ---
     introImages.qrCode = loadImage('assets/qrTest.png'); 
     introImages.finalConstellationTest = loadImage('assets/finalConstellationTest.jpg'); 
+    introImages.buttonBg = loadImage('assets/button.png'); // 버튼 배경 이미지 로드
 }
 
 
