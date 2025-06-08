@@ -164,7 +164,7 @@ function mousePressed() {
                 choosing.set(set, cardBackImages);
             } else {
                 console.log("모든 카드 선택 완료!");
-                //sceneNumber = 3;
+                sceneNumber = 3;
             }
         });
     } else if (sceneNumber === 3) {

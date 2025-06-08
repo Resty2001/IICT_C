@@ -1,5 +1,3 @@
-// IntroScene.js (이 코드로 파일 전체를 교체해주세요)
-
 class IntroScene {
     // --- 생성자 ---
     constructor(images, onComplete) {
@@ -17,16 +15,35 @@ class IntroScene {
         this.ARROW_FADE_SPEED = 10;
         this.TEXT_BOX_ALPHA = 220;
         this.KEEPER_FADE_DURATION = 500;
+        // 이 값을 조절하여 마지막 페이드아웃 시간을 변경할 수 있습니다 (1500 = 1.5초)
+        this.FADE_OUT_DURATION = 1500;
 
-        // --- UI 요소 위치/크기 정보 ---
+        // --- UI 요소 및 상태 관리 변수 ---
         this.workshopRect = {};
         this.dialogueBoxRect = {};
         this.arrowRect = {};
         this.keeperRect = {};
-
-        // --- 게임 상태 관리 ---
         this.gameState = 'MAIN_MENU';
         this.dialogueIndex = 0;
+        
+        // --- 애니메이션 및 기타 변수 ---
+        this.transitionStartTime = 0;
+        this.targetScale = 10.0;
+        this.fadeOutStartTime = 0; 
+        this.constellations = [];
+        this.generalStars = [];
+        this.skyOffsetX = 0;
+        this.skyOffsetY = 0;
+        this.constellationMoveSpeedX = 0;
+        this.constellationMoveSpeedY = 0;
+        this.currentCharIndex = 0;
+        this.isTyping = false;
+        this.lastCharTime = 0;
+        this.arrowAlpha = 0;
+        this.currentKeeperImg = null;
+        this.previousKeeperImg = null;
+        this.keeperFadeStartTime = 0;
+        this.lastKeeperImgKey = null;
 
         // --- 대화 내용 배열 ---
         this.dialogues = [
@@ -50,30 +67,7 @@ class IntroScene {
             { speaker: "공방지기", text: "완벽할 필요는 없습니다. 당신의 진실된 이야기가 곧 별이 될 테니까요.", image: 'keeper_smile2' }
         ];
 
-        // --- 기타 변수 ---
-        this.transitionStartTime = 0;
-        this.targetScale = 10.0;
-        this.constellations = [];
-        this.generalStars = [];
-        this.skyOffsetX = 0;
-        this.skyOffsetY = 0;
-        this.constellationMoveSpeedX = 0;
-        this.constellationMoveSpeedY = 0;
-        this.currentCharIndex = 0;
-        this.isTyping = false;
-        this.lastCharTime = 0;
-        this.arrowAlpha = 0;
-
-        // --- 공방지기 이미지 상태 관리 변수 ---
-        this.currentKeeperImg = null;
-        this.previousKeeperImg = null;
-        this.keeperFadeStartTime = 0;
-        this.lastKeeperImgKey = null;
-
-        // --- 초기 설정 호출 ---
         this.setup();
-
-        
     }
 
     setup() {
@@ -100,53 +94,47 @@ class IntroScene {
             case 'INTRO':
                 this.drawIntroScene();
                 break;
+            case 'FADING_OUT_WHITE':
+                this.drawFadeOutWhite();
+                break;
         }
     }
-
     
     handleMousePressed() {
-        if (this.gameState === 'MAIN_MENU') {
-            if (this.isMouseOver(this.workshopRect)) {
-                this.gameState = 'TRANSITION_TO_INTRO';
-                this.transitionStartTime = millis();
-            }
-        } else if (this.gameState === 'INTRO') {
-            if (this.isMouseOver(this.dialogueBoxRect)) {
-                if (this.isTyping) {
-                    this.currentCharIndex = this.dialogues[this.dialogueIndex].text.length;
-                    this.isTyping = false;
+        if (this.gameState === 'MAIN_MENU' && this.isMouseOver(this.workshopRect)) {
+            this.gameState = 'TRANSITION_TO_INTRO';
+            this.transitionStartTime = millis();
+        } else if (this.gameState === 'INTRO' && this.isMouseOver(this.dialogueBoxRect)) {
+            if (this.isTyping) {
+                this.currentCharIndex = this.dialogues[this.dialogueIndex].text.length;
+                this.isTyping = false;
+            } else {
+                this.dialogueIndex++;
+                if (this.dialogueIndex >= this.dialogues.length) {
+                    this.gameState = 'FADING_OUT_WHITE';
+                    this.fadeOutStartTime = millis();
                 } else {
-                    this.dialogueIndex++;
-                    if (this.dialogueIndex >= this.dialogues.length) {
-                        if (this.onComplete) {
-                            this.onComplete();
-                        }
-                        this.gameState = 'MAIN_MENU';
-                        this.dialogueIndex = 0;
-                        this.currentKeeperImg = null;
-                        this.previousKeeperImg = null;
-                        this.lastKeeperImgKey = null;
-                    } else {
-                        const currentDialogue = this.dialogues[this.dialogueIndex];
-
-                        if (currentDialogue.speaker === '공방지기') {
-                            const newImgKey = currentDialogue.image;
-                            if (newImgKey !== this.lastKeeperImgKey) {
-                                this.previousKeeperImg = this.images[this.lastKeeperImgKey];
-                                this.currentKeeperImg = this.images[newImgKey];
-                                this.keeperFadeStartTime = millis();
-                                this.lastKeeperImgKey = newImgKey;
-                            }
-                        }
-
-                        this.currentCharIndex = 0;
-                        this.isTyping = true;
-                        this.arrowAlpha = 0;
-                        this.lastCharTime = millis();
-                    }
+                    this.startNextDialogue();
                 }
             }
         }
+    }
+    
+    startNextDialogue() {
+        const currentDialogue = this.dialogues[this.dialogueIndex];
+        if (currentDialogue.speaker === '공방지기') {
+            const newImgKey = currentDialogue.image;
+            if (newImgKey !== this.lastKeeperImgKey) {
+                this.previousKeeperImg = this.images[this.lastKeeperImgKey];
+                this.currentKeeperImg = this.images[newImgKey];
+                this.keeperFadeStartTime = millis();
+                this.lastKeeperImgKey = newImgKey;
+            }
+        }
+        this.currentCharIndex = 0;
+        this.isTyping = true;
+        this.arrowAlpha = 0;
+        this.lastCharTime = millis();
     }
 
     handleWindowResized() {
@@ -164,68 +152,22 @@ class IntroScene {
         let scaleY = height / this.ORIGINAL_HEIGHT;
 
         let workshopOriginalW = 570;
-        let workshopOriginalH = 510;
-        let workshopW = workshopOriginalW * scaleX;
-        let workshopH = workshopW * (workshopOriginalH / workshopOriginalW);
-        let workshopCX = width / 2;
-        let workshopCY = height * (840 / this.ORIGINAL_HEIGHT);
-        this.workshopRect = { cx: workshopCX, cy: workshopCY, w: workshopW, h: workshopH, x: workshopCX - workshopW / 2, y: workshopCY - workshopH / 2 };
+        let workshopH = (workshopOriginalW * scaleX) * (510 / workshopOriginalW);
+        this.workshopRect = { cx: width / 2, cy: height * (840 / this.ORIGINAL_HEIGHT), w: workshopOriginalW * scaleX, h: workshopH, x: width / 2 - (workshopOriginalW * scaleX) / 2, y: height * (840 / this.ORIGINAL_HEIGHT) - workshopH / 2 };
 
         let keeperOriginalW = 600;
-        let keeperOriginalH = 900;
-        let keeperW = keeperOriginalW * scaleX;
-        let keeperH = keeperW * (keeperOriginalH / keeperOriginalW);
-        this.keeperRect = { x: width / 2, y: height / 2 + (150 * scaleY), w: keeperW, h: keeperH };
+        let keeperH = (keeperOriginalW * scaleX) * (900 / keeperOriginalW);
+        this.keeperRect = { x: width / 2, y: height / 2 + (150 * scaleY), w: keeperOriginalW * scaleX, h: keeperH };
 
         let dialogueBoxMargin = 50 * scaleX;
         let dialogueBoxH = 300 * scaleY;
-        let dialogueBoxW = width - (2 * dialogueBoxMargin);
-        this.dialogueBoxRect = { x: dialogueBoxMargin, y: height - dialogueBoxH - (30 * scaleY), w: dialogueBoxW, h: dialogueBoxH };
+        this.dialogueBoxRect = { x: dialogueBoxMargin, y: height - dialogueBoxH - (30 * scaleY), w: width - (2 * dialogueBoxMargin), h: dialogueBoxH };
 
         let arrowSize = 40 * Math.min(scaleX, scaleY);
         this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (80 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (80 * scaleY), w: arrowSize, h: arrowSize };
     }
-
-    generateConstellations() {
-        const originalConstellations = [
-             { stars: [[200, 150], [300, 180], [400, 160], [500, 200], [480, 280], [400, 300], [350, 250]], connections: [[0, 1], [1, 2], [2, 3], [3, 4], [3, 6], [5, 6]] },
-             { stars: [[1600, 100], [1650, 150], [1700, 130], [1750, 160], [1800, 140]], connections: [[0, 1], [1, 2], [2, 3], [3, 4]] },
-             { stars: [[1000, 400], [1050, 450], [1100, 400], [1050, 550], [1000, 600], [1100, 600]], connections: [[0, 1], [1, 2], [1, 3], [3, 4], [3, 5]] },
-             { stars: [[100, 400], [150, 450], [120, 500]], connections: [[0, 1], [1, 2], [2, 0]] },
-             { stars: [[600, 50], [700, 100], [800, 150], [700, 50], [700, 150]], connections: [[0, 1], [1, 2], [3, 4]] },
-             { stars: [[1200, 50], [1250, 150], [1300, 250], [1350, 350]], connections: [[0, 1], [1, 2], [2, 3]] },
-             { stars: [[1500, 500], [1550, 530], [1600, 510], [1620, 560], [1580, 590]], connections: [[0, 1], [1, 2], [2, 3], [3, 4]] },
-             { stars: [[500, 600], [550, 650], [600, 630], [650, 680]], connections: [[0, 1], [1, 2], [2, 3]] },
-             { stars: [[50, 650], [100, 650], [100, 700], [50, 700]], connections: [[0, 1], [1, 2], [2, 3], [3, 0]] },
-             { stars: [[1700, 300], [1750, 350], [1700, 400], [1800, 310], [1850, 360], [1800, 410]], connections: [[0, 1], [1, 2], [3, 4], [4, 5], [0, 3], [1, 4]] },
-             { stars: [[800, 600], [830, 650], [890, 640], [850, 700]], connections: [[0, 1], [1, 2], [0, 2], [1, 3]] },
-        ];
-        let scaleX = width / this.ORIGINAL_WIDTH;
-        let scaleY = height / this.ORIGINAL_HEIGHT;
-        this.constellations = [];
-        for (let c of originalConstellations) {
-            let newConstellation = { stars: [], connections: c.connections };
-            for (let star of c.stars) {
-                newConstellation.stars.push([star[0] * scaleX, star[1] * scaleY]);
-            }
-            this.constellations.push(newConstellation);
-        }
-    }
-
-    generateGeneralStars() {
-        this.generalStars = [];
-        let scale = Math.min(width / this.ORIGINAL_WIDTH, height / this.ORIGINAL_HEIGHT);
-        for (let i = 0; i < this.NUM_GENERAL_STARS; i++) {
-            this.generalStars.push({ x: random(0, width), y: random(0, height), size: random(1, 3.5) * scale, alpha: random(80, 200) });
-        }
-    }
-
-    updateSkyMovement() {
-        this.skyOffsetX += this.constellationMoveSpeedX;
-        this.skyOffsetY += this.constellationMoveSpeedY;
-        this.skyOffsetX = (this.skyOffsetX % width + width) % width;
-        this.skyOffsetY = (this.skyOffsetY % height + height) % height;
-    }
+    
+    // --- 그리기 함수들 ---
 
     drawMainMenu() {
         if (this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
@@ -233,6 +175,138 @@ class IntroScene {
         if (this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
         this.drawWorkshopGlow();
         if (this.images.workshopImg) image(this.images.workshopImg, this.workshopRect.cx, this.workshopRect.cy, this.workshopRect.w, this.workshopRect.h);
+    }
+    
+    drawTransition() {
+        let elapsedTime = millis() - this.transitionStartTime;
+        let progress = constrain(elapsedTime / this.TRANSITION_DURATION, 0, 1);
+        let easedProgress = 1 - pow(1 - progress, 3);
+        let alphaIn = lerp(0, 255, easedProgress);
+        let currentScale = lerp(1, this.targetScale, easedProgress);
+    
+        // 1. 이전 장면(하늘, 별, 확대되는 공방)을 모두 그립니다.
+        if (this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
+        this.drawMovingSkyElements();
+        if (this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
+        
+        push();
+        translate(this.workshopRect.cx, this.workshopRect.cy);
+        scale(currentScale);
+        if (this.images.workshopImg) {
+            image(this.images.workshopImg, 0, 0, this.workshopRect.w / currentScale, this.workshopRect.h / currentScale);
+        }
+        pop();
+    
+        // 2. 이전 장면 위를 어둡게 덮어주면서 자연스럽게 사라지게 합니다.
+        fill(0, alphaIn * 0.9);
+        noStroke();
+        rectMode(CORNER);
+        rect(0, 0, width, height);
+    
+        // 3. 새로운 장면(공방 내부)을 서서히 나타나게 합니다.
+        let bgImg = this.images.workshopInsideImg;
+        if (bgImg && bgImg.width > 0) {
+            const dims = this._calculateImageDimensions(bgImg);
+            tint(255, alphaIn);
+            image(bgImg, width / 2, height / 2, dims.w, dims.h);
+            noTint();
+        }
+    
+        // 4. 전환이 끝나면 상태를 변경합니다.
+        if (progress >= 1) {
+            this.gameState = 'INTRO';
+            this.dialogueIndex = 0;
+            const firstDialogue = this.dialogues[0];
+            const firstImgKey = firstDialogue.speaker === '공방지기' ? firstDialogue.image : null;
+            this.lastKeeperImgKey = firstImgKey;
+            this.startNextDialogue();
+        }
+    }
+
+    drawIntroScene() {
+        let bgImg = this.images.workshopInsideImg;
+        if (bgImg && bgImg.width > 0) {
+            const dims = this._calculateImageDimensions(bgImg);
+            image(bgImg, width / 2, height / 2, dims.w, dims.h);
+        } else {
+            background(10, 0, 20);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            text("배경 이미지 로딩 중...", width / 2, height / 2);
+            textAlign(LEFT, TOP);
+        }
+
+        let fadeElapsedTime = millis() - this.keeperFadeStartTime;
+        let fadeProgress = constrain(fadeElapsedTime / this.KEEPER_FADE_DURATION, 0, 1);
+
+        if (fadeProgress >= 1) this.previousKeeperImg = null;
+
+        if (this.previousKeeperImg) {
+            tint(255, lerp(255, 0, fadeProgress));
+            image(this.previousKeeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
+        }
+        if (this.currentKeeperImg) {
+            tint(255, lerp(0, 255, fadeProgress));
+            image(this.currentKeeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
+        }
+        noTint();
+        this.drawDialogueBox();
+    }
+
+    drawDialogueBox() {
+        let d = this.dialogueBoxRect;
+        let scaleX = width / this.ORIGINAL_WIDTH;
+        let scaleY = height / this.ORIGINAL_HEIGHT;
+        let avgScale = (scaleX + scaleY) / 2;
+
+        if (this.images.textBox) {
+            tint(255, this.TEXT_BOX_ALPHA);
+            image(this.images.textBox, d.x + d.w / 2, d.y + d.h / 2, d.w, d.h);
+            noTint();
+        } else {
+            fill(0, 0, 0, 180); stroke(255); strokeWeight(3 * avgScale);
+            rectMode(CORNER); rect(d.x, d.y, d.w, d.h, 15 * avgScale);
+        }
+
+        if (this.dialogueIndex < this.dialogues.length) {
+            let currentDialogue = this.dialogues[this.dialogueIndex];
+            if (this.isTyping && millis() - this.lastCharTime > this.TYPING_SPEED) {
+                if (++this.currentCharIndex >= currentDialogue.text.length) {
+                    this.isTyping = false;
+                }
+                this.lastCharTime = millis();
+            }
+            let textToShow = currentDialogue.text.substring(0, this.currentCharIndex);
+
+            let speakerTextSize = 40 * avgScale;
+            let dialogueTextSize = 36 * avgScale;
+            let paddingX = 100 * scaleX;
+            let paddingY = 70 * scaleY;
+            let textY = d.y + paddingY + speakerTextSize * 1.5;
+
+            noStroke();
+            textSize(speakerTextSize);
+            textAlign(LEFT, TOP);
+            fill(currentDialogue.speaker === "나" ? color(255, 215, 0) : color(255));
+            text(currentDialogue.speaker + ":", d.x + paddingX, d.y + paddingY);
+
+            fill(255);
+            textSize(dialogueTextSize);
+            text(textToShow, d.x + paddingX, textY, d.w - (paddingX * 2), d.h - (paddingY * 2 + speakerTextSize * 1.5));
+
+            this.arrowAlpha = this.isTyping ? 0 : min(255, this.arrowAlpha + this.ARROW_FADE_SPEED);
+            if (this.arrowAlpha > 0) {
+                fill(255, this.arrowAlpha);
+                let ar = this.arrowRect;
+                triangle(ar.x, ar.y, ar.x + ar.w, ar.y, ar.x + ar.w / 2, ar.y + ar.h);
+            }
+        }
+        imageMode(CENTER);
+    }
+    
+    updateSkyMovement() {
+        this.skyOffsetX = (this.skyOffsetX + this.constellationMoveSpeedX + width) % width;
+        this.skyOffsetY = (this.skyOffsetY + this.constellationMoveSpeedY + height) % height;
     }
 
     drawMovingSkyElements() {
@@ -261,7 +335,8 @@ class IntroScene {
     drawConstellationSet() {
         let scale = Math.min(width / this.ORIGINAL_WIDTH, height / this.ORIGINAL_HEIGHT);
         for (let constellation of this.constellations) {
-            stroke(180, 210, 255, 100); strokeWeight(1 * scale);
+            stroke(180, 210, 255, 100);
+            strokeWeight(1 * scale);
             for (let connection of constellation.connections) {
                 let start = constellation.stars[connection[0]];
                 let end = constellation.stars[connection[1]];
@@ -269,227 +344,109 @@ class IntroScene {
             }
             noStroke();
             for (let star of constellation.stars) {
-                fill(210, 225, 255, 220); ellipse(star[0], star[1], 4 * scale, 4 * scale);
-                fill(180, 210, 255, 40); ellipse(star[0], star[1], 10 * scale, 10 * scale);
+                fill(210, 225, 255, 220);
+                ellipse(star[0], star[1], 4 * scale, 4 * scale);
+                fill(180, 210, 255, 40);
+                ellipse(star[0], star[1], 10 * scale, 10 * scale);
             }
         }
     }
 
     drawWorkshopGlow() {
-        let cx = this.workshopRect.cx; let cy = this.workshopRect.cy; let baseW = this.workshopRect.w;
+        let cx = this.workshopRect.cx;
+        let cy = this.workshopRect.cy;
+        let baseW = this.workshopRect.w;
         let d = dist(mouseX, mouseY, cx, cy);
         let maxDist = 350 * (baseW / (570 * (width / this.ORIGINAL_WIDTH)));
-        let maxAlpha = 30; let minAlpha = 0;
+        let maxAlpha = 30;
+        let minAlpha = 0;
         let glowAlpha = map(d, 0, maxDist, maxAlpha, minAlpha);
         glowAlpha = constrain(glowAlpha, minAlpha, maxAlpha);
         if (glowAlpha > 0) {
-            let maxGlowSizeFactor = 1.3; let minGlowSizeFactor = 1.0;
+            let maxGlowSizeFactor = 1.3;
+            let minGlowSizeFactor = 1.0;
             let glowSizeFactor = map(d, 0, maxDist, maxGlowSizeFactor, minGlowSizeFactor);
             glowSizeFactor = constrain(glowSizeFactor, minGlowSizeFactor, maxGlowSizeFactor);
             let glowSize = baseW * glowSizeFactor;
-            let layers = 6; noStroke();
+            let layers = 6;
+            noStroke();
             for (let i = layers; i > 0; i--) {
                 let layerRatio = i / layers;
                 let currentAlpha = glowAlpha * pow(layerRatio, 3);
                 let currentSize = lerp(baseW * 0.8, glowSize, layerRatio);
-                fill(255, 255, 220, currentAlpha); ellipse(cx, cy, currentSize, currentSize);
+                fill(255, 255, 220, currentAlpha);
+                ellipse(cx, cy, currentSize, currentSize);
             }
         }
     }
 
-    drawTransition() {
-        let elapsedTime = millis() - this.transitionStartTime;
-        let progress = constrain(elapsedTime / this.TRANSITION_DURATION, 0, 1);
-        let easedProgress = 1 - pow(1 - progress, 3);
-        let alphaOut = lerp(255, 0, easedProgress);
-        let alphaIn = lerp(0, 255, easedProgress);
-        let currentScale = lerp(1, this.targetScale, easedProgress);
-        let workshopCenterX = this.workshopRect.cx;
-        let workshopCenterY = this.workshopRect.cy;
-
-        if (this.images.mainBackground) image(this.images.mainBackground, width / 2, height / 2, width, height);
-        if (this.images.subBackground) image(this.images.subBackground, width / 2, height / 2, width, height);
-
-        push();
-        translate(workshopCenterX, workshopCenterY);
-        scale(currentScale);
-        tint(255, alphaOut);
-        if (this.images.workshopImg) image(this.images.workshopImg, 0, 0, this.workshopRect.w / currentScale, this.workshopRect.h / currentScale);
-        noTint();
-        pop();
-
-        let bgImg = this.images.workshopInsideImg;
-        if (bgImg && bgImg.width > 0) {
-            let canvasRatio = width / height;
-            let imgRatio = bgImg.width / bgImg.height;
-            let imgW, imgH;
-            if (canvasRatio > imgRatio) {
-                imgW = width;
-                imgH = imgW / imgRatio;
-            } else {
-                imgH = height;
-                imgW = imgH * imgRatio;
-            }
-            tint(255, alphaIn);
-            image(bgImg, width / 2, height / 2, imgW, imgH);
-            noTint();
-        } else {
-            fill(0, alphaIn);
-            rectMode(CORNER);
-            rect(0, 0, width, height);
-            imageMode(CENTER);
-        }
-
-        if (progress >= 1) {
-            this.gameState = 'INTRO';
-            this.dialogueIndex = 0;
-            this.currentCharIndex = 0;
-            this.isTyping = true;
-            this.arrowAlpha = 0;
-            this.lastCharTime = millis();
-            
-            const firstDialogue = this.dialogues[0];
-            const firstImgKey = firstDialogue.speaker === '공방지기' ? firstDialogue.image : null;
-            if (firstImgKey) {
-                this.currentKeeperImg = this.images[firstImgKey];
-                this.previousKeeperImg = null;
-                this.keeperFadeStartTime = millis();
-                this.lastKeeperImgKey = firstImgKey;
-            } else {
-                this.currentKeeperImg = null;
-                this.previousKeeperImg = null;
-                this.lastKeeperImgKey = null;
-            }
-        }
-    }
-
-// IntroScene.js 파일에서 이 함수를 찾아 교체해주세요.
-
-drawIntroScene() {
-    let bgImg = this.images.workshopInsideImg;
-    if (bgImg && bgImg.width > 0) {
-        let canvasRatio = width / height;
-        let imgRatio = bgImg.width / bgImg.height;
-        let imgW, imgH;
-        if (canvasRatio > imgRatio) {
-            imgW = width;
-            imgH = imgW / imgRatio;
-        } else {
-            imgH = height;
-            imgW = imgH * imgRatio;
-        }
-        image(bgImg, width / 2, height / 2, imgW, imgH);
-    } else {
-        background(10, 0, 20);
-        fill(255);
-        textAlign(CENTER, CENTER);
-        text("배경 이미지 로딩 중...", width / 2, height / 2);
-        textAlign(LEFT, TOP);
-    }
-    
-    let fadeElapsedTime = millis() - this.keeperFadeStartTime;
-    let fadeProgress = constrain(fadeElapsedTime / this.KEEPER_FADE_DURATION, 0, 1);
-
-    if (fadeProgress >= 1) {
-        this.previousKeeperImg = null;
-    }
-
-    // 사라지는 이전 이미지 그리기
-    if (this.previousKeeperImg) {
-        let alphaOut = lerp(255, 0, fadeProgress);
-        tint(255, alphaOut);
-        image(this.previousKeeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
-        noTint();
-    }
-
-    // 나타나는 현재 이미지 그리기
-    if (this.currentKeeperImg) {
-        // ★★★ 바로 이 부분이 수정되었습니다! ★★★
-        // 이전 이미지가 있든 없든, 페이드가 시작되면 항상 0부터 투명도를 올립니다.
-        let alphaIn = lerp(0, 255, fadeProgress);
-        
-        tint(255, alphaIn);
-        image(this.currentKeeperImg, this.keeperRect.x, this.keeperRect.y, this.keeperRect.w, this.keeperRect.h);
-        noTint();
-    }
-    
-    this.drawDialogueBox();
-}
-    
-    drawDialogueBox() {
-        let d = this.dialogueBoxRect;
+    generateConstellations() {
+        const originalConstellations = [
+            { stars: [[200, 150], [300, 180], [400, 160], [500, 200], [480, 280], [400, 300], [350, 250]], connections: [[0, 1], [1, 2], [2, 3], [3, 4], [3, 6], [5, 6]] },
+            { stars: [[1600, 100], [1650, 150], [1700, 130], [1750, 160], [1800, 140]], connections: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+            { stars: [[1000, 400], [1050, 450], [1100, 400], [1050, 550], [1000, 600], [1100, 600]], connections: [[0, 1], [1, 2], [1, 3], [3, 4], [3, 5]] },
+            { stars: [[100, 400], [150, 450], [120, 500]], connections: [[0, 1], [1, 2], [2, 0]] },
+            { stars: [[600, 50], [700, 100], [800, 150], [700, 50], [700, 150]], connections: [[0, 1], [1, 2], [3, 4]] },
+            { stars: [[1200, 50], [1250, 150], [1300, 250], [1350, 350]], connections: [[0, 1], [1, 2], [2, 3]] },
+            { stars: [[1500, 500], [1550, 530], [1600, 510], [1620, 560], [1580, 590]], connections: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+            { stars: [[500, 600], [550, 650], [600, 630], [650, 680]], connections: [[0, 1], [1, 2], [2, 3]] },
+            { stars: [[50, 650], [100, 650], [100, 700], [50, 700]], connections: [[0, 1], [1, 2], [2, 3], [3, 0]] },
+            { stars: [[1700, 300], [1750, 350], [1700, 400], [1800, 310], [1850, 360], [1800, 410]], connections: [[0, 1], [1, 2], [3, 4], [4, 5], [0, 3], [1, 4]] },
+            { stars: [[800, 600], [830, 650], [890, 640], [850, 700]], connections: [[0, 1], [1, 2], [0, 2], [1, 3]] },
+        ];
         let scaleX = width / this.ORIGINAL_WIDTH;
         let scaleY = height / this.ORIGINAL_HEIGHT;
-        let avgScale = (scaleX + scaleY) / 2;
-
-        if (this.images.textBox) {
-            tint(255, this.TEXT_BOX_ALPHA);
-            image(this.images.textBox, d.x + d.w / 2, d.y + d.h / 2, d.w, d.h);
-            noTint();
-        } else {
-            fill(0, 0, 0, 180); stroke(255); strokeWeight(3 * avgScale);
-            rectMode(CORNER);
-            rect(d.x, d.y, d.w, d.h, 15 * avgScale);
-            imageMode(CENTER);
+        this.constellations = [];
+        for (let c of originalConstellations) {
+            let newConstellation = { stars: [], connections: c.connections };
+            for (let star of c.stars) {
+                newConstellation.stars.push([star[0] * scaleX, star[1] * scaleY]);
+            }
+            this.constellations.push(newConstellation);
         }
-        
-        if (this.dialogueIndex < this.dialogues.length) {
-            let currentDialogue = this.dialogues[this.dialogueIndex];
-            let fullText = currentDialogue.text;
+    }
 
-            if (this.isTyping && millis() - this.lastCharTime > this.TYPING_SPEED) {
-                this.currentCharIndex++;
-                this.lastCharTime = millis();
-                if (this.currentCharIndex >= fullText.length) {
-                    this.currentCharIndex = fullText.length;
-                    this.isTyping = false;
-                }
-            }
-            let textToShow = fullText.substring(0, this.currentCharIndex);
-
-            let speakerTextSize = 40 * avgScale;
-            let dialogueTextSize = 36 * avgScale;
-            let paddingX = 100 * scaleX;
-            let paddingY = 70 * scaleY;
-
-            textSize(speakerTextSize); textAlign(LEFT, TOP); noStroke();
-            fill(currentDialogue.speaker === "나" ? color(255, 215, 0) : color(255));
-            text(currentDialogue.speaker + ":", d.x + paddingX, d.y + paddingY);
-
-            fill(255); textSize(dialogueTextSize);
-            text(textToShow, d.x + paddingX, d.y + paddingY + speakerTextSize * 1.5, d.w - (paddingX * 2), d.h - (paddingY * 2 + speakerTextSize * 1.5));
-
-            if (!this.isTyping) {
-                this.arrowAlpha = min(255, this.arrowAlpha + this.ARROW_FADE_SPEED);
-            } else {
-                this.arrowAlpha = 0;
-            }
-            if (this.arrowAlpha > 0) {
-                fill(255, this.arrowAlpha); noStroke();
-                let ar = this.arrowRect;
-                ar.x = d.x + d.w - (80 * scaleX);
-                ar.y = d.y + d.h - (80 * scaleY);
-                triangle(ar.x, ar.y, ar.x + ar.w, ar.y, ar.x + ar.w / 2, ar.y + ar.h);
-            }
+    generateGeneralStars() {
+        this.generalStars = [];
+        let scale = Math.min(width / this.ORIGINAL_WIDTH, height / this.ORIGINAL_HEIGHT);
+        for (let i = 0; i < this.NUM_GENERAL_STARS; i++) {
+            this.generalStars.push({ x: random(0, width), y: random(0, height), size: random(1, 3.5) * scale, alpha: random(80, 200) });
+        }
+    }
+    
+    _calculateImageDimensions(img) {
+        let canvasRatio = width / height;
+        let imgRatio = img.width / img.height;
+        if (canvasRatio > imgRatio) return { w: width, h: width / imgRatio };
+        return { w: height * imgRatio, h: height };
+    }
+    
+    drawFadeOutWhite() {
+        this.drawIntroScene();
+        let elapsedTime = millis() - this.fadeOutStartTime;
+        let progress = constrain(elapsedTime / this.FADE_OUT_DURATION, 0, 1);
+        fill(255, lerp(0, 255, progress));
+        noStroke();
+        rectMode(CORNER);
+        rect(0, 0, width, height);
+        if (progress >= 1) {
+            if (this.onComplete) this.onComplete();
+            this.reset();
         }
     }
 
     isMouseOver(rectObj) {
-        let rX = rectObj.x !== undefined ? rectObj.x : rectObj.cx - rectObj.w / 2;
-        let rY = rectObj.y !== undefined ? rectObj.y : rectObj.cy - rectObj.h / 2;
-        return (mouseX >= rX && mouseX <= rX + rectObj.w &&
-                mouseY >= rY && mouseY <= rY + rectObj.h);
+        return (mouseX >= rectObj.x && mouseX <= rectObj.x + rectObj.w &&
+                mouseY >= rectObj.y && mouseY <= rectObj.y + rectObj.h);
     }
     
     reset() {
-    this.gameState = 'MAIN_MENU';
-    this.dialogueIndex = 0;
-    // 필요한 다른 변수들도 여기서 초기화해줍니다.
-    this.currentKeeperImg = null;
-    this.previousKeeperImg = null;
-    this.lastKeeperImgKey = null;
-    this.skyOffsetX = 0;
-    this.skyOffsetY = 0;
+        this.gameState = 'MAIN_MENU';
+        this.dialogueIndex = 0;
+        this.currentKeeperImg = null;
+        this.previousKeeperImg = null;
+        this.lastKeeperImgKey = null;
+        this.skyOffsetX = 0;
+        this.skyOffsetY = 0;
+    }
 }
-}
-
