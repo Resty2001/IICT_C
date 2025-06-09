@@ -1,6 +1,10 @@
 let currentIndex = 0;
 let storyText = "";
+let nameResult = null;
+let storyResult = null;
+let isGenerating = false;
 let choosing, backGroundImage, textBoxImage, keeperImage;
+let selectedWords = [];
 let imgList = [];
 let cardSets = [];
 let selectedCard = [];
@@ -79,11 +83,17 @@ function setup() {
       blanks: [
         {
           options: ["꽃이 만개하던", "햇살이 타오르던", "낙엽이 물들던", "함박눈이 내리던"],
-          images: [imgList[0], imgList[1], imgList[2], imgList[3]]
+          images: [imgList[0], imgList[1], imgList[2], imgList[3]],
+          bgms: [0,0,0,0],
+          nickNames: [0,0,0,0],
+          colors: [0,0,0,0]
         },
         {
           options: ["세상을 이끌길", "진리를 탐구하길", "사랑을 전하길", "나만의 길을 가길"],
-            images: [imgList[4], imgList[5], imgList[6], imgList[7]]
+            images: [imgList[4], imgList[5], imgList[6], imgList[7]],
+            bgms: [0,0,0,0],
+            nickNames: [0,0,0,0],
+            colors: [0,0,0,0]
         }
       ]
     },
@@ -92,11 +102,17 @@ function setup() {
       blanks: [
         {
           options: ["소중한 인연", "세상의 인정", "간절했던 꿈", "몸과 마음의 안정"],
-          images: [imgList[8], imgList[9], imgList[10], imgList[11]]
+          images: [imgList[8], imgList[9], imgList[10], imgList[11]],
+          bgms: [0,0,0,0],
+          nickNames: [0,0,0,0],
+          colors: [0,0,0,0]
         },
         {
           options: ["예상 못한 실패", "뼈아픈 이별", "깊은 외로움", "내면의 불신"],
-          images: [imgList[12], imgList[13], imgList[14], imgList[15]]
+          images: [imgList[12], imgList[13], imgList[14], imgList[15]],
+          bgms: [0,0,0,0],
+          nickNames: [0,0,0,0],
+          colors: [0,0,0,0]
         }
       ]
     },
@@ -105,11 +121,17 @@ function setup() {
       blanks: [
         {
           options: ["푸른 나무로", "한줌 흙으로", "깊은 바다에", "뜨거운 불꽃으로"],
-          images: [imgList[16], imgList[17], imgList[18], imgList[19]]
+          images: [imgList[16], imgList[17], imgList[18], imgList[19]],
+          bgms: [0,0,0,0],
+          nickNames: [0,0,0,0],
+          colors: [0,0,0,0]
         },
         {
           options: ["따뜻한 위로로", "함께한 웃음으로", "빛나는 길잡이로", "살아갈 힘으로"],
-          images: [imgList[20], imgList[21], imgList[22], imgList[23]]
+          images: [imgList[20], imgList[21], imgList[22], imgList[23]],
+          bgms: [0,0,0,0],
+          nickNames: [0,0,0,0],
+          colors: [0,0,0,0]
         }
       ]
     }
@@ -121,7 +143,7 @@ function setup() {
     keeperImages.push(keeperImage);
     textBoxImage = introImages.textBox;
 
-    choosing = new Choosing(selectedCard, keeperImages,textBoxImage);
+    choosing = new Choosing(selectedCard, keeperImages,textBoxImage, sceneNumber);
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
     imageMode(CENTER);
@@ -143,15 +165,30 @@ function draw() {
             choosing.show();
             choosing.displayText();
         }
-    } else if (sceneNumber === 3) {
+    } 
+    else if (sceneNumber === 3) {
+    if (isGenerating || !nameResult || !storyResult) {
+        // 로딩 UI
+        background(0);
+        fill(255);
+        textAlign(CENTER, CENTER);
+        textSize(24);
+        text("별자리를 생성하는 중입니다...", width / 2, height / 2);
+    } else {
+        backGround(0); //별을 잇는 scene
+        console.log(nameResult);
+        console.log(storyResult);
+    }
+}else if (sceneNumber === 4) {
         outroScene.draw();
     }
 }
 
+
 function mouseMoved() {
     if (sceneNumber === 2 && choosing) {
         choosing.handleMouseMoved();
-    } else if (sceneNumber === 3) {
+    } else if (sceneNumber === 4) {
         outroScene.handleMouseMoved();
     }
 }
@@ -161,16 +198,31 @@ function mousePressed() {
         introScene.handleMousePressed();
     } else if (sceneNumber === 2 && choosing) {
         choosing.handleMousePressed(() => {
-            let next = ++currentIndex;
-            if (next < cardSets.length) {
-                let set = cardSets[next];
-                choosing.set(set, cardBackImages);
-            } else {
-                console.log("모든 카드 선택 완료!");
-                sceneNumber = 3;
-            }
+            if (selectedCard.length === 6 && choosing.keeperState === "waiting") {
+    sceneNumber = 3;
+    isGenerating = true;
+
+    // selectedWords 추출: 선택된 카드의 text
+    selectedWords = selectedCard.map(card => card.text);
+
+    // 이름과 신화 생성 요청
+    createName(selectedWords).then(result => {
+        nameResult = result;
+    });
+    createStory(selectedWords).then(result => {
+        storyResult = result;
+        isGenerating = false;
+    });
+}
+ else {
+        let next = ++currentIndex;
+        if (next < cardSets.length) {
+            let set = cardSets[next];
+            choosing.set(set, cardBackImages);
+        }
+    }
         });
-    } else if (sceneNumber === 3) {
+    } else if (sceneNumber === 4) {
         outroScene.handleMousePressed();
     }
 }
@@ -183,4 +235,50 @@ function windowResized() {
     if (outroScene) {
         outroScene.handleWindowResized();
     }
+}
+
+
+async function createName() {
+  const prompt = `다음 단어들을 이용해 신화를 만들고 신화를 기반으로 별자리 이름을 1가지만 정해줘.
+  별자리 이름은 반드시 하나의 명사로 이루어진 형식으로 정해줘.
+  예를 들어 사자자리, 물병자리처럼 ~자리로 끝나게 만들어주고 너가 만든 신화 이야기는 출력할 필요 없고
+  별자리 이름 외에 다른 부가적인 설명도 필요 없으니 오로지 별자리 이름만 출력해줘: ${selectedWords.join(", ")}`;
+
+  try {
+    const res = await fetch("http://localhost:3000/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ userText: prompt })
+    });
+
+    const data = await res.json();
+    return data.result;
+  } catch (err) {
+    return undefined; 
+  }
+}
+
+async function createStory() {
+  const prompt = `다음 단어들은 하나의 신화를 창조하기 위한 영감의 재료일 뿐입니다.  
+절대로 제시된 단어를 이야기에 포함하지 말고고, 단어들의 의미와 분위기를 직관적으로 해석한 뒤  
+그 느낌에 어울리는 신화를 10단어 이내로 간단하게 창작해 주세요.  
+단어를 그대로 나열하거나 단순히 줄거리를 요약하지 말고,  
+상징과 은유를 활용하여 상상력 있는 신화를 만들어 주세요: ${selectedWords.join(", ")}`;
+
+  try {
+    const res = await fetch("http://localhost:3000/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ userText: prompt })
+    });
+
+    const data = await res.json();
+    return data.result;
+  } catch (err) {
+    return undefined; 
+  }
 }

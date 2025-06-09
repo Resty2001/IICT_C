@@ -57,7 +57,8 @@ const particleManager = createParticleManager();
   ];
 
 class Choosing {
-    constructor(selectedCard, keeperImages, textBox) {
+    constructor(selectedCard, keeperImages, textBox, sceneNumber) {
+        this.sceneNumber = sceneNumber;
         this.cardSet = null;
         this.storyText = "";
         this.selectedCard = selectedCard || [];
@@ -99,6 +100,7 @@ class Choosing {
         this.showKeeperTextBox = false;
         this.keeperTextBoxClicked = false;
         this.textBox = textBox;
+        this.idx = 0;
         this.keeperText = "";
         this.keeperIndex = 0;
     }
@@ -116,8 +118,6 @@ class Choosing {
         this.hoverAngles = new Array(cardSet.blanks[0].options.length).fill(0);
         this.selectedIndex = -1;
         this.animatingCard = null;
-        this.keeperIndex = 0;
-        this.keeperText = "";
         if (this.selectedCard.length === 0){
             this.keeperState = "showing";
             this.keeperAlpha = 0;
@@ -145,13 +145,12 @@ class Choosing {
         let currentBlank = this.cardSet.blanks[this.blankIndex];
         let options = currentBlank.options;
         let images = currentBlank.images;
-          const idx = this.selectedCard.length / 2;
 
         this.cardRects = [];
             if (this.keeperState != "done") {
       if (this.keeperState === "showing") {
         this.keeperAlpha = min(255, this.keeperAlpha + this.keeperFadeInSpeed);
-        if (this.keeperAlpha === 255 && this.keeperText === texts[idx]) {
+        if (this.keeperAlpha === 255 && this.keeperText === texts[this.idx]) {
           this.keeperState = "waiting";
         }
       }
@@ -268,14 +267,12 @@ particleManager.updateAndShow();
         pop();
     }
    drawKeeperInteraction() {
-  const idx = this.selectedCard.length / 2; // 0, 1, 2, 3
-  const keeper = this.keeperImages[idx];
 
   // keeper 이미지 (페이드인)
   push();
   tint(255, this.keeperAlpha);
   imageMode(CENTER);
-  image(keeper, windowWidth / 2, windowHeight /2, windowWidth / 3, windowHeight * 10/11);
+  image(this.keeperImages[this.idx], windowWidth / 2, windowHeight /2, windowWidth / 3, windowHeight * 10/11);
   pop();
 
   // 텍스트 박스
@@ -290,8 +287,8 @@ particleManager.updateAndShow();
   // 텍스트 출력
   const textX = windowWidth/13;
   const textY = windowHeight - boxHeight*9/10;
-  if (frameCount % this.interval === 0 && this.keeperIndex < texts[idx].length) {
-            this.keeperText += texts[idx][this.keeperIndex];
+  if (frameCount % this.interval === 0 && this.keeperIndex < texts[this.idx].length) {
+            this.keeperText += texts[this.idx][this.keeperIndex];
             this.keeperIndex++;
         }
 
@@ -356,6 +353,9 @@ particleManager.updateAndShow();
     handleMousePressed(callbackForNextSet) {
     if (this.keeperState === "waiting") {
         this.keeperAlpha = 0;
+        if (this.selectedCard.length === 6 && callbackForNextSet) {
+            callbackForNextSet();
+        }
         this.keeperState = "done";
         return;
     }
@@ -401,11 +401,6 @@ particleManager.updateAndShow();
                     arcHeight: 80
                 };
 
-                this.selectedCard.push({
-                    text: selectedWord,
-                    image: currentBlank.images[card.index]
-                });
-
                 // 2초 후 텍스트 반영
                 setTimeout(() => {
                     const blankPlaceholder = "___";
@@ -421,6 +416,19 @@ particleManager.updateAndShow();
     alpha: 0,
     sparkleTimer: 0
 });
+                this.selectedCard.push({
+                    text: selectedWord,
+                    image: currentBlank.images[card.index],
+                    star: {
+                            x: newStar.x,
+    y: newStar.y,
+    alpha: 0,
+    sparkleTimer: 0
+                    },
+                    bgm: currentBlank.bgms[card.index],
+                    nickName: currentBlank.nickNames[card.index],
+                    colour: currentBlank.colors[card.index]
+                });
 
                     if (this.blankIndex === 0) {
                         this.blankIndex = 1;
@@ -430,6 +438,9 @@ particleManager.updateAndShow();
                     } else {
                         setTimeout(() => {
                             this.keeperState = "showing";
+                            this.keeperIndex = 0;
+                            this.keeperText = "";
+                            this.idx = this.selectedCard.length/2;
                             this.animating = false;
                             this.selectedIndex = -1;
                             callbackForNextSet();
