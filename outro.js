@@ -1,6 +1,7 @@
 class OutroScene {
-    constructor(images, onComplete) {
+    constructor(images, sounds, onComplete) {
         this.images = images;
+        this.sounds = sounds; // 사운드 객체 저장
         this.onComplete = onComplete;
 
         // --- 상수 ---
@@ -47,6 +48,9 @@ class OutroScene {
         this.ypos = [];
         this.TAIL_LENGTH = 50; // 꼬리 길이 (사용자 예제의 num)
 
+        this.qrCodeDownloadUrl = null;
+        this.generatedQRImage = null;
+
         // --- 대화 내용 ---
         this.initialDialogues = [
             { speaker: "나", text: "와... 이게 바로... 저의 별자리군요." },
@@ -55,8 +59,8 @@ class OutroScene {
             { speaker: "공방지기", text: "당신의 별자리는 이제 영원히 저 하늘에 빛나겠지만... 그 기억을 당신의 영혼에도 깊이 새기고 싶지 않으신가요?", image: 'keeper_talk2' },
             { speaker: "공방지기", text: "원하신다면, 이 별자리를 당신의 마음에 간직할 수 있도록 도와드리겠습니다.", image: 'keeper_talk2' }
         ];
-        this.qrDialogue = { speaker: "공방지기", text: "좋습니다. 이제 당신의 이야기는 당신의 영혼 속에, 그리고 저 밤하늘에 영원히 함께할 것입니다.", image: 'keeper_smile1' };
-        this.noDialogue = { speaker: "공방지기", text: "괜찮습니다. 때로는 그저 밤하늘을 올려다보는 것으로 충분한 분들도 계시지요.", image: 'keeper_talk3' };
+        this.qrDialogue = { speaker: "공방지기", text: "이제 당신의 이야기는 당신의 영혼 속에, 그리고 저 밤하늘에 영원히 함께할 것입니다.", image: 'keeper_smile1' };
+        this.noDialogue = { speaker: "공방지기", text: "때로는 그저 밤하늘을 올려다보는 것으로 충분한 분들도 계시지요.", image: 'keeper_talk3' };
         this.endingMonologue = [
             { speaker: "공방지기", text: "이제 이곳에서의 당신의 역할은 끝났습니다." },
             { speaker: "공방지기", text: "당신의 별자리는 밤하늘에서 제 몫을 다할 것이고, 당신은 이제 새로운 여정을 떠나야 합니다." },
@@ -66,6 +70,36 @@ class OutroScene {
         this.setup();
     }
     
+setQRCodeUrl(url) {
+    this.qrCodeDownloadUrl = url;
+    this.generateQRCode();
+}
+
+generateQRCode() {
+    if (!this.qrCodeDownloadUrl) return;
+    try {
+        const typeNumber = 4;
+        const errorCorrectionLevel = 'L';
+        const qr = qrcode(typeNumber, errorCorrectionLevel);
+        qr.addData(this.qrCodeDownloadUrl);
+        qr.make();
+        const qrDataUrl = qr.createDataURL(5, 5);
+
+        loadImage(qrDataUrl,
+            img => {
+                this.generatedQRImage = img;
+            },
+            err => {
+                console.error("QR 이미지 로딩 실패:", err);
+                this.generatedQRImage = null; // 또는 fallback 이미지 사용
+            }
+        );
+    } catch (err) {
+        console.error("QR 코드 생성 실패:", err);
+    }
+}
+
+
     setup() {
         this.setupUIElements();
         this.constellationMoveSpeedX = width * this.CONSTELLATION_MOVE_SPEED_X_RATIO;
@@ -91,7 +125,7 @@ class OutroScene {
 
     setupUIElements() {
         let scaleX = width / this.ORIGINAL_WIDTH, scaleY = height / this.ORIGINAL_HEIGHT, avgScale = (scaleX + scaleY) / 2;
-        this.keeperRect = { x: width / 2, y: height / 2 + (150 * scaleY), w: 600 * scaleX, h: 900 * scaleX };
+        this.keeperRect = { x: width / 2, y: height*5 / 11 + (150 * scaleY), w: 600 * scaleX, h: 900 * scaleX };
         this.dialogueBoxRect = { x: 50 * scaleX, y: height - 330 * scaleY, w: width - (100 * scaleX), h: 300 * scaleY };
         let buttonW = 300 * scaleX, buttonH = 100 * scaleY, buttonY = this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2 - buttonH / 2, buttonGap = 50 * scaleX;
         this.yesButtonRect = { x: width / 2 - buttonW - buttonGap, y: buttonY, w: buttonW, h: buttonH };
@@ -99,16 +133,22 @@ class OutroScene {
         let endButtonW = 220 * scaleX;
         this.endButtonRect = { x: width / 2 - (endButtonW / 2), y: height - (150 * scaleY), w: endButtonW, h: 80 * scaleY };
         let arrowSize = 40 * avgScale;
-        this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (120 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (80 * scaleY), w: arrowSize, h: arrowSize };
+        this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (125 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (90 * scaleY), w: arrowSize, h: arrowSize };
     }
 
     draw() {
         const isFinalScene = this.sceneState === 'FINAL_SCREEN' || this.sceneState === 'FADING_OUT_TO_WHITE';
+        if (!isFinalScene) {
+            if (this.sounds.bgm3 && !this.sounds.bgm3.isPlaying()) {
+                this.sounds.bgm3.loop();
+            }
+        }
+
         isFinalScene ? this.drawNightSkyBackground() : this.drawWorkshopBackground();
 
         // <<< 여기서 마우스 꼬리를 그림
         if (isFinalScene) {
-            this.updateAndDrawMouseTrail();
+            //this.updateAndDrawMouseTrail();
         }
 
         switch (this.sceneState) {
@@ -180,19 +220,39 @@ class OutroScene {
         }
     }
     
-    drawFadeOverlay(isFadingOut) {
-        let progress = constrain((millis() - this.fadeStartTime) / this.FADE_DURATION, 0, 1);
-        let alpha = lerp(0, 255, progress);
-        fill(255, alpha); noStroke(); rectMode(CORNER); rect(0, 0, width, height);
-        if (progress >= 1) {
-            if (isFadingOut) this.onComplete();
-            else { 
-                this.sceneState = 'FINAL_SCREEN'; 
-                this.fadeStartTime = millis();
-                this.initMouseTrail(); // <<< FINAL_SCREEN 시작 시 꼬리 초기화
+ drawFadeOverlay(isFadingOut) {
+    let progress = constrain((millis() - this.fadeStartTime) / this.FADE_DURATION, 0, 1);
+    let alpha = lerp(0, 255, progress);
+    fill(255, alpha);
+    noStroke();
+    rectMode(CORNER);
+    rect(0, 0, width, height);
+
+    // 페이드 인/아웃이 완료되었을 때
+    if (progress >= 1) {
+        if (isFadingOut) {
+            // '종료하기'를 눌러서 페이드 아웃될 때
+            this.onComplete();
+        } else { 
+            // FINAL_SCREEN으로 페이드 인될 때
+            
+            // --- ★ 여기가 누락된 핵심 로직입니다 ★ ---
+            // BGM3을 멈춥니다.
+            if (this.sounds.bgm3 && this.sounds.bgm3.isPlaying()) {
+                this.sounds.bgm3.stop();
             }
+            // BGM4를 반복 재생합니다.
+            if (this.sounds.bgm4 && !this.sounds.bgm4.isPlaying()) {
+                this.sounds.bgm4.loop();
+            }
+            // --- 로직 추가 끝 ---
+
+            this.sceneState = 'FINAL_SCREEN'; 
+            this.fadeStartTime = millis();
+            this.initMouseTrail();
         }
     }
+}
     // --- 그리기 헬퍼 함수들 ---
 
     drawWorkshopBackground() {
@@ -263,7 +323,16 @@ class OutroScene {
         rect(popupX, popupY, popupW, popupH, 20);
 
         let qrSize = 400 * Math.min(scaleX, scaleY);
-        image(this.images.qrCode, width / 2, popupY + popupH / 2 - 120 * scaleY, qrSize, qrSize);
+        if (this.generatedQRImage) {
+    image(this.generatedQRImage, width / 2, popupY + popupH / 2 - 120 * scaleY, qrSize, qrSize);
+} else {
+    image(this.images.qrCode, width / 2, popupY + popupH / 2 - 120 * scaleY, qrSize, qrSize);
+    fill(255);
+    textAlign(CENTER, CENTER);
+    text("QR 코드 생성 중...", width/2, popupY + popupH / 2 - 120 * scaleY);
+    fill(255);
+    text("QR 코드 생성 중이거나 실패했습니다.", width / 2, height / 2);
+}
 
         textAlign(CENTER, TOP); noStroke();
         fill(255); textSize(32 * Math.min(scaleX, scaleY));
@@ -273,6 +342,7 @@ class OutroScene {
         fill(255, 150 + sin(millis() * 0.005) * 105);
         text("화면을 클릭하여 계속하기", width/2, popupY + popupH - 60 * scaleY);
         textAlign(LEFT, TOP);
+        
     }
     
     drawFadeToWhite() {
@@ -343,6 +413,12 @@ class OutroScene {
             this.dialogueIndex = 0;
             this.fadeStartTime = millis();
             this.resetTyping(null);
+                       if (nextState === 'FADING_TO_WHITE') {
+                if (this.sounds.transition) {
+                    this.sounds.transition.play();
+                }
+            }
+
         } else {
             this.resetTyping(dialogues[this.dialogueIndex]);
         }
@@ -387,7 +463,7 @@ class OutroScene {
         fill(255); textSize(dialogueSize); 
         text(textToShow, d.x + pX, tY, d.w - (pX * 2), d.h - (pY * 2.5));
         if (!this.isTyping) {
-            let arrowAlpha = map(sin(millis() * 0.005), -1, 1, 180, 255);
+            let arrowAlpha = map(sin(millis() * 0.005), -1, 1, 90, 220);
             fill(255, arrowAlpha); noStroke();
             let ar = this.arrowRect;
             triangle(ar.x, ar.y, ar.x + ar.w, ar.y, ar.x + ar.w / 2, ar.y + ar.h);

@@ -1,7 +1,8 @@
 class IntroScene {
     // --- 생성자 ---
-    constructor(images, onComplete) {
+    constructor(images,sounds, onComplete) {
         this.images = images;
+        this.sounds = sounds; // 전달받은 사운드 객체 저장
         this.onComplete = onComplete;
 
         // --- 상수 정의 ---
@@ -12,7 +13,6 @@ class IntroScene {
         this.CONSTELLATION_MOVE_SPEED_Y_RATIO = 0.03 / this.ORIGINAL_HEIGHT;
         this.NUM_GENERAL_STARS = 250;
         this.TYPING_SPEED = 50;
-        this.ARROW_FADE_SPEED = 10;
         this.TEXT_BOX_ALPHA = 220;
         this.KEEPER_FADE_DURATION = 500;
         // 이 값을 조절하여 마지막 페이드아웃 시간을 변경할 수 있습니다 (1500 = 1.5초)
@@ -39,7 +39,6 @@ class IntroScene {
         this.currentCharIndex = 0;
         this.isTyping = false;
         this.lastCharTime = 0;
-        this.arrowAlpha = 0;
         this.currentKeeperImg = null;
         this.previousKeeperImg = null;
         this.keeperFadeStartTime = 0;
@@ -53,17 +52,18 @@ class IntroScene {
             { speaker: "공방지기", text: "당신은 삶의 여정을 마친 영혼들이 쉬어가는 곳, 사후세계에 도착했습니다.", image: 'keeper_normal' },
             { speaker: "나", text: "아... 그렇군요... 그럼 저는 역시...", image: null },
             { speaker: "나", text: "하지만 이곳은... 제가 상상했던 사후세계와는 조금 다른 것 같은데요. 이 반짝이는 것들은 다 뭐죠?", image: null },
-            { speaker: "공방지기", text: "이곳은 '별자리 공방', 이 공방은 아무에게나 모습을 드러내지 않습니다. 당신을 그리워하는 이들의 간절한 마음이 모여 비로소 이곳의 불을 밝히지요.", image: 'keeper_talk1' },
+            { speaker: "공방지기", text: "이곳은 '별자리 공방', 이 공방은 아무에게나 모습을 드러내지 않습니다.", image: 'keeper_talk1' },
+            { speaker: "공방지기", text:  "당신을 그리워하는 이들의 간절한 마음이 모여 비로소 이곳의 불을 밝히지요.", image: 'keeper_talk1'},
             { speaker: "공방지기", text: "당신이 여기 있다는 건, 그만큼 당신이 빛나는 존재였다는 뜻입니다.", image: 'keeper_talk1' },
             { speaker: "나", text: "제가... 빛나는 존재였다고요? ...그럼 이 공방에서는 무엇을 하나요?", image: null },
-            { speaker: "공방지기", text: "이곳에서는 당신의 삶, 그 소중한 기억의 조각들을 모읍니다. 당신의 웃음과 눈물, 사랑과 꿈...", image: 'keeper_smile2' },
-            { speaker: "공방지기", text: "그 모든 빛나는 순간들을 모아서, 밤하늘에 영원히 빛날 당신만의 별자리를 만들어 드린답니다.", image: 'keeper_smile2' },
+            { speaker: "공방지기", text: "이곳에서는 당신의 삶, 그 소중한 기억의 조각들을 모읍니다. 당신의 웃음과 눈물, 사랑과 꿈...", image: 'keeper_talk1' },
+            { speaker: "공방지기", text: "그 모든 빛나는 순간들을 모아서, 밤하늘에 영원히 빛날 당신만의 별자리를 만들어 드린답니다.", image: 'keeper_talk1' },
             { speaker: "나", text: "제 삶으로도... 그렇게 아름다운 별자리를 만들 수 있을까요?", image: null },
             { speaker: "공방지기", text: "물론입니다. 허허. 아무리 평범해 보이는 삶이라도, 그 안에는 반드시 밤하늘을 수놓을 고유한 빛이 있지요.", image: 'keeper_talk3' },
             { speaker: "공방지기", text: "제가 그 빛을 찾도록 도와드릴 테니, 염려 마십시오.", image: 'keeper_talk3' },
             { speaker: "나", text: "저만의 별자리라... 저는 그럼 어떻게 하면 될까요...?", image: null },
-            { speaker: "공방지기", text: "어려울 것 없습니다. 제가 드리는 몇 가지 질문에 당신의 마음이 이끄는 대로 답해주시겠습니까?", image: 'keeper_talk2' },
-            { speaker: "공방지기", text: "각 질문에 제시된 선택지 중, 당신의 삶을 가장 잘 나타낸다고 생각하는 하나를 골라주시면 됩니다.", image: 'keeper_talk2' },
+            { speaker: "공방지기", text: "어려울 것 없습니다. 제가 드리는 몇 가지 질문에 당신의 마음이 이끄는 대로 답해주시겠습니까?", image: 'keeper_smile2' },
+            { speaker: "공방지기", text: "각 질문에 제시된 선택지 중, 당신의 삶을 가장 잘 나타낸다고 생각하는 하나를 골라주시면 됩니다.", image: 'keeper_smile2' },
             { speaker: "공방지기", text: "완벽할 필요는 없습니다. 당신의 진실된 이야기가 곧 별이 될 테니까요.", image: 'keeper_smile2' }
         ];
 
@@ -81,10 +81,14 @@ class IntroScene {
         this.generateGeneralStars();
     }
 
-    draw() {
+draw() {
         background(0);
         switch (this.gameState) {
             case 'MAIN_MENU':
+                // --- BGM 1 반복 재생 코드 추가 ---
+                if (this.sounds.bgm1 && !this.sounds.bgm1.isPlaying()) {
+                    this.sounds.bgm1.loop();
+                }
                 this.updateSkyMovement();
                 this.drawMainMenu();
                 break;
@@ -102,6 +106,12 @@ class IntroScene {
     
     handleMousePressed() {
         if (this.gameState === 'MAIN_MENU' && this.isMouseOver(this.workshopRect)) {
+            if (this.sounds.door) {
+                this.sounds.door.play();
+            }
+             if (this.sounds.aura && this.sounds.aura.isPlaying()) {
+            this.sounds.aura.stop();
+        }
             this.gameState = 'TRANSITION_TO_INTRO';
             this.transitionStartTime = millis();
         } else if (this.gameState === 'INTRO' && this.isMouseOver(this.dialogueBoxRect)) {
@@ -157,14 +167,14 @@ class IntroScene {
 
         let keeperOriginalW = 600;
         let keeperH = (keeperOriginalW * scaleX) * (900 / keeperOriginalW);
-        this.keeperRect = { x: width / 2, y: height / 2 + (150 * scaleY), w: keeperOriginalW * scaleX, h: keeperH };
+        this.keeperRect = { x: width / 2, y: height*5 / 11 + (150 * scaleY), w: keeperOriginalW * scaleX, h: keeperH };
 
         let dialogueBoxMargin = 50 * scaleX;
         let dialogueBoxH = 300 * scaleY;
         this.dialogueBoxRect = { x: dialogueBoxMargin, y: height - dialogueBoxH - (30 * scaleY), w: width - (2 * dialogueBoxMargin), h: dialogueBoxH };
 
         let arrowSize = 40 * Math.min(scaleX, scaleY);
-        this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (80 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (80 * scaleY), w: arrowSize, h: arrowSize };
+        this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (125 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (90 * scaleY), w: arrowSize, h: arrowSize };
     }
     
     // --- 그리기 함수들 ---
@@ -214,6 +224,12 @@ class IntroScene {
     
         // 4. 전환이 끝나면 상태를 변경합니다.
         if (progress >= 1) {
+             if (this.sounds.bgm1 && this.sounds.bgm1.isPlaying()) {
+                this.sounds.bgm1.stop();
+            }
+            if (this.sounds.bgm2 && !this.sounds.bgm2.isPlaying()) {
+            this.sounds.bgm2.loop();
+        }
             this.gameState = 'INTRO';
             this.dialogueIndex = 0;
             const firstDialogue = this.dialogues[0];
@@ -293,13 +309,15 @@ class IntroScene {
             fill(255);
             textSize(dialogueTextSize);
             text(textToShow, d.x + paddingX, textY, d.w - (paddingX * 2), d.h - (paddingY * 2 + speakerTextSize * 1.5));
-
-            this.arrowAlpha = this.isTyping ? 0 : min(255, this.arrowAlpha + this.ARROW_FADE_SPEED);
-            if (this.arrowAlpha > 0) {
-                fill(255, this.arrowAlpha);
-                let ar = this.arrowRect;
-                triangle(ar.x, ar.y, ar.x + ar.w, ar.y, ar.x + ar.w / 2, ar.y + ar.h);
-            }
+         if (!this.isTyping) {
+        // sin() 함수를 이용해 부드럽게 깜빡이는 효과(150~255 alpha)를 만듭니다.
+        let arrowAlpha = map(sin(millis() * 0.005), -1, 1, 90, 220);
+        fill(255, arrowAlpha);
+        noStroke();
+        let ar = this.arrowRect;
+        triangle(ar.x, ar.y, ar.x + ar.w, ar.y, ar.x + ar.w / 2, ar.y + ar.h);
+    }
+          
         }
         imageMode(CENTER);
     }
@@ -378,6 +396,25 @@ class IntroScene {
                 ellipse(cx, cy, currentSize, currentSize);
             }
         }
+            if (this.sounds.aura) {
+        // 1. 아직 재생 중이 아니라면,
+        if (!this.sounds.aura.isPlaying()) {
+            // 2. 재생을 시키기 "전"에 볼륨을 즉시 0으로 설정합니다.
+            this.sounds.aura.setVolume(0, 0); // 램프 타임 없이 즉시 0으로
+            // 3. 그 다음에 반복 재생을 시작합니다.
+            this.sounds.aura.loop();
+        }
+
+        // 거리를 볼륨으로 매핑합니다. 
+        // 가까울수록(d=0) 볼륨이 1, 멀수록(d=maxDist) 볼륨이 0이 됩니다.
+        let targetVolume = map(d, 0, maxDist, 0.2, 0.0);
+        
+        // 볼륨 값이 0과 1 사이를 벗어나지 않도록 제한합니다.
+        targetVolume = constrain(targetVolume, 0.0, 1.0);
+
+        // 계산된 볼륨을 효과음에 부드럽게 적용합니다. (0.1초의 램프 타임)
+        this.sounds.aura.setVolume(targetVolume, 0.1);
+    }
     }
 
     generateConstellations() {
@@ -441,6 +478,13 @@ class IntroScene {
     }
     
     reset() {
+        if (this.sounds.bgm1 && this.sounds.bgm1.isPlaying()) {
+            this.sounds.bgm1.stop();
+        }
+        if (this.sounds.bgm2 && this.sounds.bgm2.isPlaying()) {
+            this.sounds.bgm2.stop();
+        }
+
         this.gameState = 'MAIN_MENU';
         this.dialogueIndex = 0;
         this.currentKeeperImg = null;

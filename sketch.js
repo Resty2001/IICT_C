@@ -9,12 +9,16 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 1;
+let sceneNumber = 4;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
 let fade = 0;
 let fadeSpeed = 4;
+
+let bgmExample1, doorOpenSound, bgmExample2;
+let bgmExample3, bgmExample4, transitionSound;
+let auraHumSound;
 
 
 function preload() {
@@ -33,7 +37,7 @@ function preload() {
     introImages.mainBackground2 = loadImage('assets/Nightsky_Blank.png');
     introImages.subBackground = loadImage('assets/subBackground.png');
     introImages.workshopImg = loadImage('assets/workshop.png');
-    introImages.workshopInsideImg = loadImage('assets/workshopBackground (1).png');
+    introImages.workshopInsideImg = loadImage('assets/workshopBackground (1) extend.png');
     introImages.workshopInsideImg2 = loadImage('assets/workshopBackground (3).png');
     introImages.textBox = loadImage('assets/textBox.png');
 
@@ -50,14 +54,29 @@ function preload() {
     introImages.qrCode = loadImage('assets/qrTest.png'); 
     introImages.finalConstellationTest = loadImage('assets/finalConstellationTest.jpg'); 
     introImages.buttonBg = loadImage('assets/button.png'); // 버튼 배경 이미지 로드
-}
+
+    soundFormats('mp3');
+    bgmExample1 = loadSound('assets/bgmExample1.mp3');
+    doorOpenSound = loadSound('assets/doorOpen.mp3');
+    bgmExample2 = loadSound('assets/bgmExample2Test.mp3');
+
+    bgmExample3 = loadSound('assets/bgmExample1.mp3');
+    bgmExample4 = loadSound('assets/bgmExample2Test.mp3');
+    transitionSound = loadSound('assets/knockKnock.mp3');
+    auraHumSound = loadSound('assets/auraHum.mp3');
+
+  }
 
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     textFont("sans-serif");
+    userStartAudio();
     
     const goNextScene = () => {
+       if (bgmExample2 && bgmExample2.isPlaying()) {
+            bgmExample2.stop();
+        }
         sceneNumber = 2;
         currentIndex = 0;
         selectedCard = [];
@@ -66,16 +85,30 @@ function setup() {
     };
 
     const returnToStart = () => {
+              if (bgmExample3 && bgmExample3.isPlaying()) {
+            bgmExample3.stop();
+        }
+        if (bgmExample4 && bgmExample4.isPlaying()) {
+            bgmExample4.stop();
+        }
         sceneNumber = 1;
         if(introScene) introScene.reset();
     };
 
-    // --- 각 씬 객체 생성 ---
-    introScene = new IntroScene(introImages, goNextScene);
-    
-    // ★★★ 이 부분만 수정되었습니다 ★★★
-    // OutroScene은 첫 번째 인자로 모든 이미지를 받으므로, 두 번째 인자는 필요 없습니다.
-    outroScene = new OutroScene(introImages, returnToStart);
+     const introSounds = {
+        bgm1: bgmExample1,
+        door: doorOpenSound,
+        bgm2: bgmExample2,
+        aura: auraHumSound
+    };
+    introScene = new IntroScene(introImages, introSounds, goNextScene);
+
+    const outroSounds = {
+        bgm3: bgmExample3,
+        bgm4: bgmExample4,
+        transition: transitionSound
+    };
+    outroScene = new OutroScene(introImages, outroSounds, returnToStart); 
 
     cardSets = [
     {
@@ -189,7 +222,7 @@ function mouseMoved() {
     if (sceneNumber === 2 && choosing) {
         choosing.handleMouseMoved();
     } else if (sceneNumber === 4) {
-        outroScene.handleMouseMoved();
+       outroScene.handleMouseMoved();
     }
 }
 
@@ -197,31 +230,34 @@ function mousePressed() {
     if (sceneNumber === 1) {
         introScene.handleMousePressed();
     } else if (sceneNumber === 2 && choosing) {
-        choosing.handleMousePressed(() => {
-            if (selectedCard.length === 6 && choosing.keeperState === "waiting") {
-    sceneNumber = 3;
-    isGenerating = true;
+choosing.handleMousePressed(async () => { // async 추가
+    if (selectedCard.length === 6 && choosing.keeperState === "waiting") {
+        sceneNumber = 3;
+        isGenerating = true;
 
-    // selectedWords 추출: 선택된 카드의 text
-    selectedWords = selectedCard.map(card => card.text);
+        const namePromise = createName(selectedWords);
+        const storyPromise = createStory(selectedWords);
 
-    // 이름과 신화 생성 요청
-    createName(selectedWords).then(result => {
-        nameResult = result;
-    });
-    createStory(selectedWords).then(result => {
-        storyResult = result;
+        nameResult = await namePromise;
+        storyResult = await storyPromise;
+
+        // --- 여기가 핵심 수정 부분 ---
+        const imageUrl = await saveCanvasAndGetUrl();
+        if (imageUrl) {
+            outroScene.setQRCodeUrl(imageUrl);
+        }
         isGenerating = false;
-    });
-}
- else {
+        sceneNumber = 4;
+        // --- 수정 끝 ---
+
+    } else {
         let next = ++currentIndex;
         if (next < cardSets.length) {
             let set = cardSets[next];
             choosing.set(set, cardBackImages);
         }
     }
-        });
+});
     } else if (sceneNumber === 4) {
         outroScene.handleMousePressed();
     }
@@ -281,4 +317,45 @@ async function createStory() {
   } catch (err) {
     return undefined; 
   }
+}
+
+async function saveCanvasAndGetUrl() {
+    const dataUrl = canvas.toDataURL('image/png');
+    try {
+        const res = await fetch("http://localhost:3000/save-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageData: dataUrl })
+        });
+        if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+        const data = await res.json();
+        return data.imageUrl;
+    } catch (err) {
+        console.error("캔버스 저장 실패:", err);
+        return null;
+    }
+}
+
+
+// [테스트용 임시 코드]
+async function keyPressed() {
+    // 키보드의 't' 또는 'T' 키를 누르면
+    if (key === 't' || key === 'T') {
+        console.log("테스트 시작: 캔버스 저장 및 QR 생성");
+
+        // 현재 화면에 보이는 것(아무거나)을 이미지로 저장하고 URL을 받아옵니다.
+        const imageUrl = await saveCanvasAndGetUrl();
+
+        if (imageUrl) {
+            console.log("테스트 성공: 이미지 URL 받음 ->", imageUrl);
+            // 받은 URL로 OutroScene의 QR코드를 설정합니다.
+            outroScene.setQRCodeUrl(imageUrl);
+            // 강제로 Scene 4 (아웃트로)로 전환합니다.
+            sceneNumber = 4;
+            outroScene.sceneState = 'QR_CODE_PATH'; 
+            console.log("테스트: Scene 4로 전환합니다.");
+        } else {
+            console.error("테스트 실패: 이미지 URL을 받아오지 못했습니다.");
+        }
+    }
 }
