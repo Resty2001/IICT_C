@@ -9,7 +9,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 4;
+let sceneNumber = 1;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
