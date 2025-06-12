@@ -59,7 +59,7 @@ class OutroScene {
             { speaker: "공방지기", text: "당신의 별자리는 이제 영원히 저 하늘에 빛나겠지만... 그 기억을 당신의 영혼에도 깊이 새기고 싶지 않으신가요?", image: 'keeper_talk2' },
             { speaker: "공방지기", text: "원하신다면, 이 별자리를 당신의 마음에 간직할 수 있도록 도와드리겠습니다.", image: 'keeper_talk2' }
         ];
-        this.qrDialogue = { speaker: "공방지기", text: "이제 당신의 이야기는 당신의 영혼 속에, 그리고 저 밤하늘에 영원히 함께할 것입니다.", image: 'keeper_smile1' };
+        this.qrDialogue = { speaker: "공방지기", text: "이제 당신의 이야기는 당신의 영혼 속에,\n그리고 저 밤하늘에 영원히 함께할 것입니다.", image: 'keeper_smile1' };
         this.noDialogue = { speaker: "공방지기", text: "때로는 그저 밤하늘을 올려다보는 것으로 충분한 분들도 계시지요.", image: 'keeper_talk3' };
         this.endingMonologue = [
             { speaker: "공방지기", text: "이제 이곳에서의 당신의 역할은 끝났습니다." },
@@ -123,15 +123,26 @@ generateQRCode() {
         }
     }
 
-    setupUIElements() {
+setupUIElements() {
         let scaleX = width / this.ORIGINAL_WIDTH, scaleY = height / this.ORIGINAL_HEIGHT, avgScale = (scaleX + scaleY) / 2;
         this.keeperRect = { x: width / 2, y: height*5 / 11 + (150 * scaleY), w: 600 * scaleX, h: 900 * scaleX };
         this.dialogueBoxRect = { x: 50 * scaleX, y: height - 330 * scaleY, w: width - (100 * scaleX), h: 300 * scaleY };
-        let buttonW = 300 * scaleX, buttonH = 100 * scaleY, buttonY = this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2 - buttonH / 2, buttonGap = 50 * scaleX;
+
+        // --- ▼ [수정 1] '좋아요' / '괜찮습니다' 버튼 크기 조절 (클릭 범위 축소) ▼ ---
+        let buttonW = 300 * scaleX * 0.85; // 너비를 85%로 줄임
+        let buttonH = 100 * scaleY * 0.8;  // 높이를 80%로 줄임
+        let buttonY = this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2 - buttonH / 2;
+        let buttonGap = 50 * scaleX;
+
         this.yesButtonRect = { x: width / 2 - buttonW - buttonGap, y: buttonY, w: buttonW, h: buttonH };
         this.noButtonRect = { x: width / 2 + buttonGap, y: buttonY, w: buttonW, h: buttonH };
-        let endButtonW = 220 * scaleX;
-        this.endButtonRect = { x: width / 2 - (endButtonW / 2), y: height - (150 * scaleY), w: endButtonW, h: 80 * scaleY };
+
+        // --- ▼ [수정 2] '종료하기' 버튼 크기 조절 (클릭 범위 축소) ▼ ---
+        let endButtonW = 220 * scaleX * 0.9; // 너비를 90%로 줄임
+        let endButtonH = 80 * scaleY * 0.85; // 높이를 85%로 줄임
+
+        this.endButtonRect = { x: width / 2 - (endButtonW / 2), y: height - (150 * scaleY), w: endButtonW, h: endButtonH };
+        
         let arrowSize = 40 * avgScale;
         this.arrowRect = { x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (125 * scaleX), y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (90 * scaleY), w: arrowSize, h: arrowSize };
     }
@@ -182,8 +193,22 @@ generateQRCode() {
         switch (this.sceneState) {
             case 'INITIAL_DIALOGUE': this.advanceDialogue(this.initialDialogues, 'CHOICE'); break;
             case 'CHOICE':
-                if (this.isMouseOver(this.yesButtonRect)) { this.sceneState = 'QR_CODE_PATH'; this.resetTyping(this.qrDialogue); } 
-                else if (this.isMouseOver(this.noButtonRect)) { this.sceneState = 'NO_THANKS_PATH'; this.resetTyping(this.noDialogue); }
+                let choiceMade = false;
+                if (this.isMouseOver(this.yesButtonRect)) {
+                    this.sceneState = 'QR_CODE_PATH';
+                    this.resetTyping(this.qrDialogue);
+                    choiceMade = true;
+                } 
+                else if (this.isMouseOver(this.noButtonRect)) {
+                    this.sceneState = 'NO_THANKS_PATH';
+                    this.resetTyping(this.noDialogue);
+                    choiceMade = true;
+                }
+
+                // ▼ 버튼이 눌렸고 'smallLaugh' 사운드가 있으면 재생합니다. (대소문자 수정) ▼
+                if (choiceMade && this.sounds.smallLaugh) {
+                    this.sounds.smallLaugh.play();
+                }
                 break;
             case 'QR_CODE_PATH':
             case 'NO_THANKS_PATH':
@@ -340,7 +365,7 @@ generateQRCode() {
 
         textSize(24 * Math.min(scaleX, scaleY));
         fill(255, 150 + sin(millis() * 0.005) * 105);
-        text("화면을 클릭하여 계속하기", width/2, popupY + popupH - 60 * scaleY);
+        text("화면 클릭하여 넘어가기", width/2, popupY + popupH - 60 * scaleY);
         textAlign(LEFT, TOP);
         
     }
@@ -383,7 +408,7 @@ generateQRCode() {
         noTint();
     }
 
-    drawFinalScreen() {
+drawFinalScreen() {
         let elapsedTime = millis() - this.fadeStartTime;
         let scale = width / this.ORIGINAL_WIDTH;
         const buttonDelay = 5000, buttonFadeDuration = 1500;
@@ -395,12 +420,27 @@ generateQRCode() {
         
         if (buttonAlpha > 0) {
             let textSizeVal = 32 * scale;
+            let isHovering = this.isMouseOver(this.endButtonRect);
+            
+            // 버튼 이미지의 투명도를 설정합니다. (마우스오버 효과 포함)
+            let imageTint = isHovering ? buttonAlpha : buttonAlpha * 0.85; 
+            
+            // --- ▼ [수정] 텍스트 색상과 투명도를 분리하여 제어합니다. ▼ ---
+            // 마우스오버에 따라 텍스트의 '밝기'만 결정합니다.
+            let textBrightness = isHovering ? 255 : 220;
+            
+            // 1. 버튼 배경 이미지를 그립니다.
             push();
-            tint(255, buttonAlpha);
+            tint(255, imageTint);
             image(this.images.buttonBg, this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2, this.endButtonRect.w, this.endButtonRect.h);
             pop();
-            fill(255, buttonAlpha); 
-            noStroke(); textAlign(CENTER, CENTER); textSize(textSizeVal);
+
+            // 2. 텍스트를 그립니다.
+            // 위에서 계산한 밝기와, 배경과 동일한 'buttonAlpha' 투명도 값을 함께 적용합니다.
+            fill(textBrightness, buttonAlpha);
+            noStroke();
+            textAlign(CENTER, CENTER);
+            textSize(textSizeVal);
             text("종료하기", this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2);
             textAlign(LEFT, TOP);
         }
