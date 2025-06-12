@@ -9,7 +9,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 1;
+let sceneNumber = 4;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
@@ -98,7 +98,7 @@ const returnToStart = () => {
 
         // 씬 번호를 1로 바꾸고 인트로 씬을 리셋합니다.
         sceneNumber = 1;
-        if(introScene) introScene.reset();
+        if(introScene) introScene.reset(true);
     };
 
      const introSounds = {

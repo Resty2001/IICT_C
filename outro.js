@@ -337,37 +337,63 @@ setupUIElements() {
         textAlign(LEFT, TOP);
     }
     
-    drawQRCodeScene() {
+drawQRCodeScene() {
         this.drawKeeperImage();
         fill(0, 180); noStroke(); rectMode(CORNER); rect(0, 0, width, height);
 
-        let scaleX = width/this.ORIGINAL_WIDTH, scaleY = height/this.ORIGINAL_HEIGHT;
+        let scaleX = width / this.ORIGINAL_WIDTH, scaleY = height / this.ORIGINAL_HEIGHT;
         let popupW = 800 * scaleX, popupH = 900 * scaleY;
         let popupX = width / 2 - popupW / 2, popupY = height / 2 - popupH / 2;
+        
+        // 팝업창 배경 그리기
         fill(20, 20, 30, 240); stroke(255, 100); strokeWeight(2);
         rect(popupX, popupY, popupW, popupH, 20);
 
+        // QR 코드 영역 그리기
         let qrSize = 400 * Math.min(scaleX, scaleY);
+        let qrCenterX = width / 2;
+        let qrCenterY = popupY + popupH / 2 - 120 * scaleY;
+
         if (this.generatedQRImage) {
-    image(this.generatedQRImage, width / 2, popupY + popupH / 2 - 120 * scaleY, qrSize, qrSize);
-} else {
-    image(this.images.qrCode, width / 2, popupY + popupH / 2 - 120 * scaleY, qrSize, qrSize);
-    fill(255);
-    textAlign(CENTER, CENTER);
-    text("QR 코드 생성 중...", width/2, popupY + popupH / 2 - 120 * scaleY);
-    fill(255);
-    text("QR 코드 생성 중이거나 실패했습니다.", width / 2, height / 2);
-}
+            // QR 이미지가 생성되면 그걸 보여줍니다.
+            image(this.generatedQRImage, qrCenterX, qrCenterY, qrSize, qrSize);
+        } else {
+            // --- ▼ [수정 2] "QR 코드 생성 중" 문구 복구 ▼ ---
+            // QR 이미지가 아직 없으면, 임시 이미지와 안내 문구를 함께 보여줍니다.
+            image(this.images.qrCode, qrCenterX, qrCenterY, qrSize, qrSize);
+            
+            fill(255);
+            textAlign(CENTER, CENTER);
+            // 안내 문구를 위한 작은 텍스트 크기를 별도로 설정합니다.
+            textSize(16 * Math.min(scaleX, scaleY)); 
+            text("QR 코드 생성 중...", qrCenterX, qrCenterY);
+        }
 
-        textAlign(CENTER, TOP); noStroke();
-        fill(255); textSize(32 * Math.min(scaleX, scaleY));
-        text(this.qrDialogue.text, width / 2 - popupW/2 * 0.8, popupY + popupH * 0.7, popupW * 0.8);
-
-        textSize(24 * Math.min(scaleX, scaleY));
-        fill(255, 150 + sin(millis() * 0.005) * 105);
-        text("화면 클릭하여 넘어가기", width/2, popupY + popupH - 60 * scaleY);
-        textAlign(LEFT, TOP);
+        // --- ▼ [수정 1] 메인 텍스트 중앙 정렬 및 줄 간격 수정 ▼ ---
+        // 텍스트 정렬을 가로/세로 모두 중앙으로 설정합니다.
+        textAlign(CENTER, CENTER); 
+        noStroke();
+        fill(255);
         
+        let dialogueTextSize = 32 * Math.min(scaleX, scaleY);
+        textSize(dialogueTextSize);
+        textLeading(dialogueTextSize * 1.5);
+        
+        // 텍스트의 y 위치를 재조정하고, 너비 제한 없이 그립니다.
+        // textAlign(CENTER, CENTER)가 각 줄을 알아서 중앙에 배치해 줍니다.
+        text(this.qrDialogue.text, width / 2, popupY + popupH * 0.75);
+        
+        
+        // '계속하기' 안내 문구
+        let continueTextSize = 24 * Math.min(scaleX, scaleY);
+        textSize(continueTextSize);
+        textLeading(continueTextSize);
+        
+        fill(255, 150 + sin(millis() * 0.005) * 105);
+        text("화면을 클릭하여 계속하기", width/2, popupY + popupH - 60 * scaleY);
+        
+        // 다음 프레임에 영향을 주지 않도록 텍스트 정렬을 기본값으로 되돌립니다.
+        textAlign(LEFT, TOP);
     }
     
     drawFadeToWhite() {

@@ -43,6 +43,9 @@ class IntroScene {
         this.previousKeeperImg = null;
         this.keeperFadeStartTime = 0;
         this.lastKeeperImgKey = null;
+        this.isFadingIn = false;
+        this.fadeInStartTime = 0;
+        this.FADE_IN_DURATION = 1500; // 아웃트로 페이드 아웃과 시간 통일 (1.5초)
 
         // --- 대화 내용 배열 ---
         this.dialogues = [
@@ -85,6 +88,26 @@ class IntroScene {
         
     }
 
+ drawFadeInFromWhite() {
+        if (!this.isFadingIn) return;
+
+        let elapsedTime = millis() - this.fadeInStartTime;
+        let progress = constrain(elapsedTime / this.FADE_IN_DURATION, 0, 1);
+
+        // lerp를 이용해 투명도를 255(불투명)에서 0(투명)으로 변화시킵니다.
+        let alpha = lerp(255, 0, progress);
+
+        fill(255, alpha);
+        noStroke();
+        rectMode(CORNER);
+        rect(0, 0, width, height);
+
+        // 페이드 인이 끝나면 상태를 false로 바꿔 더 이상 실행되지 않게 합니다.
+        if (progress >= 1) {
+            this.isFadingIn = false;
+        }
+    }
+    
 draw() {
         background(0);
         switch (this.gameState) {
@@ -106,6 +129,7 @@ draw() {
                 this.drawFadeOutWhite();
                 break;
         }
+        this.drawFadeInFromWhite();
     }
     
 handleMousePressed() {
@@ -512,7 +536,7 @@ handleMousePressed() {
         return alpha > 10;
     }
     
-    reset() {
+    reset(shouldFade = false) {
         if (this.sounds.bgm1 && this.sounds.bgm1.isPlaying()) {
             this.sounds.bgm1.stop();
         }
@@ -527,5 +551,11 @@ handleMousePressed() {
         this.lastKeeperImgKey = null;
         this.skyOffsetX = 0;
         this.skyOffsetY = 0;
+        if (shouldFade) {
+            this.isFadingIn = true;
+            this.fadeInStartTime = millis();
+        } else {
+            this.isFadingIn = false;
+        }
     }
 }
