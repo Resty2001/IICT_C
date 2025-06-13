@@ -57,8 +57,8 @@ const texts = [
 ];
 
 class Choosing {
-  constructor(selectedCard, keeperImages, textBox, sceneNumber) {
-    this.sceneNumber = sceneNumber;
+  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback) {
+    this.sceneTransitionCallback = sceneTransitionCallback;
     this.cardSet = null;
     this.storyText = "";
     this.selectedCard = selectedCard;
@@ -369,9 +369,11 @@ class Choosing {
   handleMousePressed(callbackForNextSet) {
     if (this.keeperState === "waiting") {
       this.keeperAlpha = 0;
-      if (this.selectedCard.length === 6 && callbackForNextSet) {
-        callbackForNextSet();
-      }
+      if (this.selectedCard.length === 6 && this.idx === (texts.length - 1)) {
+                if (this.sceneTransitionCallback) {
+                    this.sceneTransitionCallback(); 
+                }
+            }
       this.keeperState = "done";
       return;
     }
