@@ -9,7 +9,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 4;
+let sceneNumber = 2;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
@@ -32,9 +32,18 @@ function preload() {
             imgList.push(loadImage("assets/" + i + "-" + j + ".png"));
         }
     }
-    for (let i = 1; i <= 12; i++){
-      starImages.push(loadImage("assets/starB1-1.png"));
-    }
+    starImages.push(loadImage("assets/hammer.png"));
+    starImages.push(loadImage("assets/loom.png"));
+    starImages.push(loadImage("assets/anvil.png"));
+    starImages.push(loadImage("assets/mandolin.png"));
+    starImages.push(loadImage("assets/still.png"));
+    starImages.push(loadImage("assets/wateringcan.png"));
+    starImages.push(loadImage("assets/compass.png"));
+    starImages.push(loadImage("assets/rudder.png"));
+    starImages.push(loadImage("assets/caduceus.png"));
+    starImages.push(loadImage("assets/quill.png"));
+    starImages.push(loadImage("assets/cloud.png"));
+    starImages.push(loadImage("assets/shield.png"));
     cardBackImages = [
         loadImage("assets/card.green.png"),
         loadImage("assets/card.purple.png"),
@@ -106,7 +115,6 @@ function setup() {
         // 씬 번호를 1로 바꾸고 인트로 씬을 리셋합니다.
         sceneNumber = 1;
         if(introScene) introScene.reset(true);
-        if(introScene) introScene.reset(true);
     };
 
       const introSounds = {
@@ -123,8 +131,7 @@ function setup() {
         transition: transitionSound
 
     };
-    outroScene = new OutroScene(introImages, sounds, returnToStart); 
-    outroScene = new OutroScene(introImages, sounds, returnToStart); 
+    outroScene = new OutroScene(introImages, sounds, returnToStart);  
 
     cardSets = [
     {
@@ -185,6 +192,43 @@ function setup() {
       ]
     }
   ];
+  const updateSceneToConnecting = () => {
+    sceneNumber = 3;
+    fade = 0; // 페이드 효과를 위해 fade 값 초기화
+    selectedWords = selectedCard.map(card => card.text);
+    isGenerating = true;
+
+    // AI API 호출 (비동기 처리)
+    createName(selectedWords).then(result => {
+        nameResult = result;
+    });
+    createStory(selectedWords).then(result => {
+        storyResult = result;
+        isGenerating = false;
+    });
+
+    console.log("모든 카드 선택 완료, Connecting 씬으로 전환 시도:", sceneNumber);
+
+    // Connecting 객체는 모든 카드 데이터가 준비된 후 한 번만 생성
+      
+    connecting = new Connecting(
+        selectedCard,
+        nameResult,
+        storyResult,
+        keeperImages,
+        textBoxImage,
+        // Connecting 씬에서 '별자리 완성' 버튼 클릭 시 다음 씬(Outro)으로 넘어가는 콜백
+        () => { sceneNumber = 4; console.log("sceneNumber updated to:", sceneNumber); },
+        // 별자리 완성 시 이미지/URL을 외부 변수에 저장하는 콜백
+        (img, url) => {
+            capturedConstellationImage = img;
+            capturedConstellationURL = url;
+            console.log("별자리 완성! 이미지와 URL이 외부 변수에 저장되었습니다.");
+            console.log("URL (일부):", capturedConstellationURL.substring(0, 50) + "...");
+        },
+        starImages
+    );
+};
 
     keeperImages.push(introImages.keeper_talk3);
     keeperImages.push(introImages.keeper_smile1);
@@ -198,8 +242,7 @@ function setup() {
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);
     textBoxImage = introImages.textBox;
-
-    choosing = new Choosing(selectedCard, keeperImages,textBoxImage, sceneNumber);
+    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting);
 
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
@@ -237,7 +280,10 @@ function draw() {
             image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
             noTint();
             fade += fadeSpeed;
+            connecting.set(nameResult,storyResult);
         } else {
+          console.log(storyResult);
+          console.log(nameResult);
             image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
             connecting.update();
             connecting.show();
@@ -261,34 +307,12 @@ function mousePressed() {
     if (sceneNumber === 1) {
         introScene.handleMousePressed();
     } else if (sceneNumber === 2 && choosing) {
-choosing.handleMousePressed(async () => { // async 추가
-    if (selectedCard.length === 6 && choosing.keeperState === "waiting") {
-        sceneNumber = 3;
-        fade = 0;
-        isGenerating = true;
-        nameResult = "조각가자리";
-        storyResult = "hello world";
-        isGenerating = false;
-        console.log(selectedCard[0].star.x);
-        // ⭐ Connecting 객체 생성 시 콜백 함수 추가 ⭐
-        connecting = new Connecting(
-            selectedCard, 
-            nameResult, 
-            storyResult, 
-            keeperImages, 
-            textBoxImage, 
-            // sceneNumber를 업데이트하는 콜백
-            () => { sceneNumber++; console.log("sceneNumber updated to:", sceneNumber); }, 
-            // ⭐ 별자리 완성 시 이미지/URL을 외부 변수에 저장하는 콜백 ⭐
-            (img, url) => {
-        capturedConstellationImage = img; // p5.Image 객체 저장
-        capturedConstellationURL = url;   // Base64 URL 저장
-        console.log("별자리 완성! 이미지와 URL이 외부 변수에 저장되었습니다.");
-        console.log("URL (일부):", capturedConstellationURL.substring(0, 50) + "...");
-            },
-            starImages
-        );
-
+      choosing.handleMousePressed(() => {
+        if(selectedCard.length === 6 && choosing.keeperState === "waiting"){
+        choosing.mousePressed(updateSceneToConnecting);
+      }
+    else{
+        
     //     createName(selectedWords).then(result => {
     //     nameResult = result;
     // });
@@ -296,17 +320,14 @@ choosing.handleMousePressed(async () => { // async 추가
     //     storyResult = result;
     //     isGenerating = false;
     // });
-
-
-    } else {
         let next = ++currentIndex;
         if (next < cardSets.length) {
             let set = cardSets[next];
             choosing.set(set, cardBackImages);
         }
     }
-});
-    } 
+  });
+}
     else if(sceneNumber === 3){
       connecting.handleMousePressed();
     }else if (sceneNumber === 4) {
@@ -337,10 +358,78 @@ function windowResized() {
 
 
 async function createName() {
-  const prompt = `다음 단어들을 이용해 신화를 만들고 신화를 기반으로 별자리 이름을 1가지만 정해줘.
-  별자리 이름은 반드시 하나의 명사로 이루어진 형식으로 정해줘.
-  예를 들어 사자자리, 물병자리처럼 ~자리로 끝나게 만들어주고 너가 만든 신화 이야기는 출력할 필요 없고
-  별자리 이름 외에 다른 부가적인 설명도 필요 없으니 오로지 별자리 이름만 출력해줘: ${selectedWords.join(", ")}`;
+  const prompt = `다음 단어를 통해 얻을 수 있는 분위기, 단어의 의미 등을 종합해서 아래의 12가지 별자리 이름 중에서 가장 잘 어울리는 별자리 이름을 골라줘. 출력은 반드시 "~자리"만 해줘. 예를 들어, "조각가자리", "수호자자리" 등: ${selectedWords.join(", ")}
+  조각가자리
+이미지: 망치
+원형: 형태를 만들고 본질을 드러내는 예술가. 원석에서 아름다움을 발견하고 다듬어냅니다.
+성격: 인내심이 강하고, 집중력이 뛰어나며, 현실적인 감각을 지녔습니다. 때로는 완벽주의적인 성향을 보일 수 있습니다.
+가치: 인내, 변형, 실체화
+
+직조가자리
+이미지: 베틀 또는 실타래
+원형: 관계와 운명의 실을 엮어 복잡하고 아름다운 패턴을 만들어내는 연결자.
+성격: 섬세하고, 관계 지향적이며, 전체적인 그림을 볼 줄 압니다. 때로는 우유부단하거나 너무 많은 것을 고려하려 할 수 있습니다.
+가치: 연결, 조화, 인연
+
+대장장이자리
+이미지: 모루
+원형: 강인한 의지와 열정으로 원재료를 단련시켜 강력한 도구나 무기를 만드는 변혁가.
+성격: 강인하고, 열정적이며, 목표 지향적입니다. 때로는 고집이 세거나 충동적일 수 있습니다
+가치: 단련, 창조, 힘
+
+음유시인자리
+이미지: 만돌린 또는 두루마리
+원형: 이야기, 노래, 시를 통해 감정과 지혜를 전달하고 영감을 주는 전달자.
+성격: 표현력이 풍부하고, 감수성이 예민하며, 사람들을 매료시키는 매력이 있습니다. 때로는 현실 감각이 부족하거나 감정에 치우칠 수 있습니다.
+가치: 영감, 소통, 감동
+
+연금술사자리
+이미지: 증류기 
+원형: 평범한 것을 비범한 것으로 변화시키려 하며, 본질적인 변화와 깨달음을 추구하는 탐구자.
+성격: 지적 호기심이 강하고, 실험적이며, 비밀스러운 면이 있습니다. 때로는 비현실적이거나 강박적인 모습을 보일 수 있습니다.
+가치: 변환, 탐구, 지혜
+
+정원사자리
+이미지: 물뿌리개
+원형: 생명을 키우고 돌보며, 성장과 결실을 인내심 있게 기다리는 양육자.
+성격: 온화하고, 인내심이 많으며, 헌신적입니다. 때로는 지나치게 보호적이거나 변화를 두려워할 수 있습니다.
+이미지: 성장, 양육, 결실
+
+건축가자리
+이미지: 컴퍼스
+원형: 견고하고 아름다운 구조물을 설계하고 건설하여 질서와 안정을 창조하는 설계자.
+성격: 논리적이고, 계획적이며, 미래를 내다보는 통찰력이 있습니다. 때로는 융통성이 없거나 지나치게 비판적일 수 있습니다.
+가치: 구조, 안정, 비전
+
+항해사자리
+이미지: 나침반 또는 방향타
+원형: 미지의 세계를 탐험하고 새로운 길을 개척하며, 목표를 향해 나아가는 길잡이.
+성격: 모험심이 강하고, 직관력이 뛰어나며, 자유를 사랑합니다. 때로는 무모하거나 안정을 찾기 어려워할 수 있습니다.
+가치: 탐험, 방향, 개척
+
+치유사자리
+이미지: 약초 다발 또는 카두케우스
+원형: 상처 입은 몸과 마음을 돌보고, 균형과 회복을 돕는 조력자.
+성격: 공감 능력이 뛰어나고, 자비로우며, 헌신적입니다. 때로는 타인의 고통에 너무 깊이 동화되거나 자신을 돌보지 못할 수 있습니다.
+가치: 회복, 균형, 연민
+
+서기관자리
+이미지: 깃펜 또는 잉크병
+원형: 지식과 역사를 기록하고 보존하며, 지혜를 다음 세대로 전달하는 기록자.
+성격: 지적이고, 꼼꼼하며, 객관성을 중시합니다. 때로는 지나치게 분석적이거나 감정 표현에 서툴 수 있습니다.
+가치: 지식, 보존, 진실
+
+몽상가자리
+이미지: 구름 또는 반짝이는 안개
+원형: 현실 너머의 가능성을 보고, 상상력과 창의력으로 새로운 세계를 그리는 영감의 원천.
+성격: 상상력이 풍부하고, 이상주의적이며, 독창적입니다. 때로는 현실 도피적이거나 실현 가능성이 낮은 아이디어를 추구할 수 있습니다.
+가치: 상상, 영감, 가능성
+
+수호자자리
+이미지: 방패 
+원형: 소중한 가치, 사람들, 또는 영역을 헌신적으로 보호하고 지키는 방어자.
+성격: 책임감이 강하고, 용감하며, 충성스럽습니다. 때로는 배타적이거나 변화에 저항적일 수 있습니다
+가치: 보호, 책임, 충성`;
 
   try {
     const res = await fetch("http://localhost:3000/generate", {
@@ -361,7 +450,7 @@ async function createName() {
 async function createStory() {
   const prompt = `다음 단어들은 하나의 신화를 창조하기 위한 영감의 재료일 뿐입니다.   
 절대로 제시된 단어를 이야기에 포함하지 말고고, 단어들의 의미와 분위기를 직관적으로 해석한 뒤   
-그 느낌에 어울리는 신화를 10단어 이내로 간단하게 창작해 주세요.   
+그 느낌에 어울리는 신화를 10단어 이내로 간단하게 창작해 주세요. '*'이 기호는 절대로 포함하지 마시오  
 단어를 그대로 나열하거나 단순히 줄거리를 요약하지 말고,   
 상징과 은유를 활용하여 상상력 있는 신화를 만들어 주세요: ${selectedWords.join(", ")}`;
 

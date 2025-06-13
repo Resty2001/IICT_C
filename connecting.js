@@ -40,6 +40,9 @@ class Connecting{
         this.draggingStar = null;
         this.initialStarPosition = { x: 0, y: 0 }; // 드래그 시작 시 별의 초기 위치 저장
         this.starImages = starImages;
+        this.storyText = "";
+        this.storyIndex = "";
+        this.confirmedStory = "";
 
         this.isCardSelected = false;
         this.favoriteCard = [];
@@ -63,6 +66,10 @@ class Connecting{
             this.starPositions[i].alpha = min(255, this.starPositions[i].alpha + 2);
         }
     }
+    set(nameResult,storyResult){
+        this.nameResult = nameResult;
+        this.storyResult = storyResult;
+}
 
     show() {
         // console.log(this.index); // 디버깅 용도, 필요 없으면 제거하세요.
@@ -363,7 +370,7 @@ class Connecting{
         const textX = windowWidth / 13;
         const textY = windowHeight - (boxHeight * 9) / 10;
         // `textSize`를 `wrapText` 호출 전에 설정하여 정확한 너비 계산을 보장합니다.
-        textSize(50); // `this.fontSize`가 정의되지 않은 것 같습니다. 임시로 18로 설정했습니다.
+        textSize(50); 
         if (
             frameCount % this.interval === 0 &&
             this.keeperIndex < keeperDialogue[this.index].length
@@ -375,7 +382,7 @@ class Connecting{
         fill(255, this.keeperAlpha);
         noStroke();
         textAlign(LEFT, TOP);
-        let wrapped = this.wrapText(this.keeperText, boxWidth - 40);
+        let wrapped = this.wrapText(this.keeperText, boxWidth- 40);
         text(wrapped, textX, textY);
     }
 
@@ -458,10 +465,23 @@ class Connecting{
 
     displayStory(){
         push();
+        const textX = windowWidth/20;
+        const textY = windowHeight/8;
+        // `textSize`를 `wrapText` 호출 전에 설정하여 정확한 너비 계산을 보장합니다.
+        textSize(50); 
+        if (
+            frameCount % this.interval === 0 &&
+            this.storyIndex < this.confirmedStory.length
+        ) {
+            this.storyText += this.confirmedStory[this.storyIndex];
+            this.storyIndex++;
+        }
+
+        fill(255);
+        noStroke();
         textAlign(LEFT, TOP);
-        textSize(18);
-        fill(255, 220);
-        text(this.storyResult, windowWidth / 20, windowHeight / 8);
+        let wrapped = this.wrapText(this.storyText, windowWidth*7/15);
+        text(wrapped, textX, textY);
         pop();
     }
 
@@ -489,24 +509,25 @@ class Connecting{
         pop();
     }
 
-    wrapText(txt, maxWidth) {
-        let words = txt.split(""); // 글자 단위로 쪼갬
-        let lines = "";
-        let currentLine = "";
+    // Connecting.js - wrapText 함수 수정
+wrapText(txt, maxWidth) {
+    let words = txt.split(" "); // 스페이스 기준으로 단어를 쪼갭니다.
+    let lines = "";
+    let currentLine = "";
 
-        // textSize가 함수 외부에서 설정되어야 정확합니다. keeperInteraction을 참고하세요.
-        // 예를 들어 textSize(this.fontSize); 가 이미 설정되어 있다고 가정합니다.
+    // textSize가 함수 외부에서 설정되어야 정확합니다. keeperInteraction을 참고하세요.
+    // 예를 들어 textSize(this.fontSize); 가 이미 설정되어 있다고 가정합니다.
 
-        for (let i = 0; i < words.length; i++) {
-            let testLine = currentLine + words[i];
-            if (textWidth(testLine) > maxWidth && words[i] !== " ") { // 공백이 아닌 경우에만 줄 바꿈
-                lines += currentLine + "\n";
-                currentLine = words[i];
-            } else {
-                currentLine = testLine;
-            }
+    for (let i = 0; i < words.length; i++) {
+        let testLine = currentLine + (i > 0 ? " " : "") + words[i]; // 첫 단어가 아니면 앞에 공백 추가
+        if (textWidth(testLine) > maxWidth) {
+            lines += currentLine + "\n";
+            currentLine = words[i];
+        } else {
+            currentLine = testLine;
         }
-        lines += currentLine; // 마지막 줄 추가
-        return lines;
     }
+    lines += currentLine; // 마지막 줄 추가
+    return lines;
+}
 }
