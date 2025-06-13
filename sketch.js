@@ -9,12 +9,13 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 2;
+let sceneNumber = 1;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
 let fade = 0;
 let fadeSpeed = 4;
+let sounds = {};
 let starImages = [];
 
 let bgmExample1, doorOpenSound, bgmExample2;
@@ -65,15 +66,14 @@ function preload() {
     introImages.buttonBg = loadImage('assets/button.png'); // 버튼 배경 이미지 로드
 
     soundFormats('mp3');
-    bgmExample1 = loadSound('assets/bgmExample1.mp3');
-    doorOpenSound = loadSound('assets/doorOpen.mp3');
-    bgmExample2 = loadSound('assets/bgmExample2Test.mp3');
-
-    bgmExample3 = loadSound('assets/bgmExample1.mp3');
-    bgmExample4 = loadSound('assets/bgmExample2Test.mp3');
-    transitionSound = loadSound('assets/knockKnock.mp3');
-    auraHumSound = loadSound('assets/auraHum.mp3');
-
+    sounds.bgm1 = loadSound('assets/bgmExample1.mp3');
+    sounds.door = loadSound('assets/doorOpen.mp3');
+    sounds.bgm2 = loadSound('assets/bgmExample2Test.mp3');
+    sounds.bgm3 = loadSound('assets/bgmExample1.mp3'); // 아웃트로 BGM
+    sounds.bgm4 = loadSound('assets/bgmExample2Test.mp3'); // 아웃트로 BGM
+    sounds.transition = loadSound('assets/transition(2).mp3');
+    sounds.aura = loadSound('assets/auraHum.mp3');
+    sounds.smallLaugh = loadSound('assets/smallLaugh.mp3'); 
 }
 
 
@@ -95,14 +95,15 @@ function setup() {
     };
 
     const returnToStart = () => {
-                if (bgmExample3 && bgmExample3.isPlaying()) {
-            bgmExample3.stop();
+        // OutroScene에서 사용된 모든 BGM을 sounds 객체를 통해 정지시킵니다.
+        if (sounds.bgm3 && sounds.bgm3.isPlaying()) {
+            sounds.bgm3.stop();
         }
-        if (bgmExample4 && bgmExample4.isPlaying()) {
-            bgmExample4.stop();
+        if (sounds.bgm4 && sounds.bgm4.isPlaying()) {
+            sounds.bgm4.stop();
         }
         sceneNumber = 1;
-        if(introScene) introScene.reset();
+        if(introScene) introScene.reset(true);
     };
 
       const introSounds = {
@@ -111,14 +112,14 @@ function setup() {
         bgm2: bgmExample2,
         aura: auraHumSound
     };
-    introScene = new IntroScene(introImages, introSounds, goNextScene);
+    introScene = new IntroScene(introImages, sounds, goNextScene);
 
     const outroSounds = {
         bgm3: bgmExample3,
         bgm4: bgmExample4,
         transition: transitionSound
     };
-    outroScene = new OutroScene(introImages, outroSounds, returnToStart); 
+    outroScene = new OutroScene(introImages, sounds, returnToStart); 
 
     cardSets = [
     {
@@ -239,16 +240,6 @@ function draw() {
     }
 }else if (sceneNumber === 4) {
     outroScene.draw();
-        // ⭐ 디버깅을 위해 캡처된 별자리를 그리는 코드 (선택 사항, 필요 없으면 제거해도 됩니다) ⭐
-        if (capturedConstellationImage) {
-            // OutroScene에 이미지를 직접 전달하여 그리는 것이 더 나은 방법일 수 있습니다.
-            // 여기서는 단순히 외부 변수를 이용한 예시입니다.
-            push();
-            // 이미지 크기와 위치는 OutroScene의 디자인에 맞춰 조정 필요
-            imageMode(CENTER);
-            image(capturedConstellationImage, width / 2, height / 2, capturedConstellationImage.width, capturedConstellationImage.height);
-            pop();
-        }
     }
 }
 

@@ -44,7 +44,7 @@ function createParticleManager() {
           this.particles.splice(i, 1);
         }
       }
-    },
+    }
   };
 }
 
@@ -53,7 +53,7 @@ const texts = [
   "자, 그럼 당신의 이야기부터 시작해볼까요?\n당신의 이야기가 시작된 탄생의 빛은 어떤 풍경이었나요?\n당신의 유년의 빛은 어떤 기억으로 반짝였나요?",
   "당신의 삶에서 가장 빛나는 성장의 빛은 어떤 가치와 시련 속에서 피어났을까요?\n당신에게 가장 큰 가치는 무엇이었고, 또 가장 넘기 힘들었던 시련은 무엇이었나요?",
   "이제 마지막입니다.\n당신의 육신은 어디에 잠들었나요?\n또 당신을 그리는 이들에게 어떤 마지막 빛을 전하고 싶으신가요?",
-  "이야기를 모두 선택하셨습니다. 이제 별을 이으러 가시죠.",
+  "이야기를 모두 선택하셨습니다. 이제 별을 이으러 가시죠."
 ];
 
 class Choosing {
@@ -126,7 +126,7 @@ class Choosing {
 
   update() {
     for (let i = 0; i < this.hoverAngles.length; i++) {
-      let target = i === this.hoveredIndex ? PI : 0;
+      let target = (i === this.hoveredIndex) ? PI : 0;
       this.hoverAngles[i] = lerp(this.hoverAngles[i], target, 0.07);
     }
 
