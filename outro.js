@@ -48,6 +48,8 @@ class OutroScene {
         this.ypos = [];
         this.TAIL_LENGTH = 50; // 꼬리 길이 (사용자 예제의 num)
 
+        this.finalConstellationImage = null;
+
         this.qrCodeDownloadUrl = null;
         this.generatedQRImage = null;
 
@@ -68,6 +70,10 @@ class OutroScene {
         ];
 
         this.setup();
+    }
+    
+    setFinalConstellationImage(img) {
+        this.finalConstellationImage = img;
     }
     
 setQRCodeUrl(url) {
@@ -418,9 +424,10 @@ drawQRCodeScene() {
     }
 
     drawFinalConstellation() {
-        if (!this.images.finalConstellationTest) return;
+        
+        const img = this.finalConstellationImage || this.images.finalConstellationTest;
+        if (!img) return;
         let scale = width / this.ORIGINAL_WIDTH, elapsedTime = millis() - this.fadeStartTime;
-        let img = this.images.finalConstellationTest;
         let imgWidth = width / 4, imgHeight = imgWidth * (img.height / img.width);
         let imgX = width / 2, imgY = height / 3;
         

@@ -9,7 +9,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 4;
+let sceneNumber = 1;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
@@ -124,7 +124,7 @@ function setup() {
 
     };
     outroScene = new OutroScene(introImages, sounds, returnToStart); 
-    outroScene = new OutroScene(introImages, sounds, returnToStart); 
+
 
     cardSets = [
     {
@@ -271,32 +271,34 @@ choosing.handleMousePressed(async () => { // async 추가
         isGenerating = false;
         console.log(selectedCard[0].star.x);
         // ⭐ Connecting 객체 생성 시 콜백 함수 추가 ⭐
-        connecting = new Connecting(
-            selectedCard, 
-            nameResult, 
-            storyResult, 
-            keeperImages, 
-            textBoxImage, 
-            // sceneNumber를 업데이트하는 콜백
-            () => { sceneNumber++; console.log("sceneNumber updated to:", sceneNumber); }, 
-            // ⭐ 별자리 완성 시 이미지/URL을 외부 변수에 저장하는 콜백 ⭐
-            (img, url) => {
-        capturedConstellationImage = img; // p5.Image 객체 저장
-        capturedConstellationURL = url;   // Base64 URL 저장
-        console.log("별자리 완성! 이미지와 URL이 외부 변수에 저장되었습니다.");
-        console.log("URL (일부):", capturedConstellationURL.substring(0, 50) + "...");
-            },
-            starImages
-        );
-
-    //     createName(selectedWords).then(result => {
-    //     nameResult = result;
-    // });
-    // createStory(selectedWords).then(result => {
-    //     storyResult = result;
-    //     isGenerating = false;
-    // });
-
+connecting = new Connecting(
+                    selectedCard,
+                    nameResult,
+                    storyResult,
+                    keeperImages,
+                    textBoxImage,
+                    // 1. sceneNumber를 업데이트하고, 캡처된 데이터를 outroScene에 전달하는 콜백
+                    () => {
+                        // OutroScene에 캡처된 이미지와 URL을 전달합니다.
+                        if (capturedConstellationURL) {
+                            outroScene.setQRCodeUrl(capturedConstellationURL);
+                        }
+                        if (capturedConstellationImage) {
+                            outroScene.setFinalConstellationImage(capturedConstellationImage);
+                        }
+                        // 모든 데이터 전달 후, Outro 씬(4번)으로 전환합니다.
+                        sceneNumber = 4;
+                        console.log("데이터 전달 완료! Outro 씬으로 전환합니다.");
+                    },
+                    // 2. 별자리 완성 시 이미지/URL을 외부 변수에 저장하는 콜백 (기존과 동일)
+                    (img, url) => {
+                        capturedConstellationImage = img; // p5.Image 객체 저장
+                        capturedConstellationURL = url;   // Base64 URL 저장
+                        console.log("별자리 완성! 이미지와 URL이 외부 변수에 저장되었습니다.");
+                        console.log("URL (일부):", capturedConstellationURL.substring(0, 50) + "...");
+                    },
+                    starImages
+                );
 
     } else {
         let next = ++currentIndex;
