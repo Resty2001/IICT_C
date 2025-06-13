@@ -9,7 +9,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = [];
 let cardBackImages = [];
-let sceneNumber = 1;
+let sceneNumber = 4;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
@@ -102,7 +102,10 @@ function setup() {
         if (sounds.bgm4 && sounds.bgm4.isPlaying()) {
             sounds.bgm4.stop();
         }
+
+        // 씬 번호를 1로 바꾸고 인트로 씬을 리셋합니다.
         sceneNumber = 1;
+        if(introScene) introScene.reset(true);
         if(introScene) introScene.reset(true);
     };
 
@@ -118,7 +121,9 @@ function setup() {
         bgm3: bgmExample3,
         bgm4: bgmExample4,
         transition: transitionSound
+
     };
+    outroScene = new OutroScene(introImages, sounds, returnToStart); 
     outroScene = new OutroScene(introImages, sounds, returnToStart); 
 
     cardSets = [
