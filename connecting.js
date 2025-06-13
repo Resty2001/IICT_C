@@ -42,16 +42,10 @@ class Connecting{
         this.starImages = starImages;
         this.storyText = "";
         this.storyIndex = "";
-        this.confirmedStory = "";
 
         this.isCardSelected = false;
         this.favoriteCard = [];
         
-        for (let i = 0; i<starNames.length; i++){
-            if(nameResult === starNames[i]){
-                this.starImage = this.starImages[i];
-            }
-        }
         for (let i = 0; i<this.selectedCard.length; i++)
             this.starPositions.push({
                 x: this.selectedCard[i].star.x,
@@ -69,6 +63,11 @@ class Connecting{
     set(nameResult,storyResult){
         this.nameResult = nameResult;
         this.storyResult = storyResult;
+        for (let i = 0; i<starNames.length; i++){
+            if(nameResult == starNames[i]){
+                this.starImage = this.starImages[i];
+            }
+        }
 }
 
     show() {
@@ -471,9 +470,9 @@ class Connecting{
         textSize(50); 
         if (
             frameCount % this.interval === 0 &&
-            this.storyIndex < this.confirmedStory.length
+            this.storyIndex < this.storyResult.length
         ) {
-            this.storyText += this.confirmedStory[this.storyIndex];
+            this.storyText += this.storyResult[this.storyIndex];
             this.storyIndex++;
         }
 
