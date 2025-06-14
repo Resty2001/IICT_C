@@ -7,11 +7,11 @@ let choosing,connecting, backGroundImage, textBoxImage, keeperImage;
 let selectedWords = [];
 let imgList = [];
 let cardSets = [];
-let selectedCard = [];
+let selectedCard = []; // 이 변수에 선택된 카드들이 저장됩니다.
 let cardBackImages = [];
-let sceneNumber = 1;
+let sceneNumber = 2;
 let introScene, outroScene;
-let keeperImages = [];     
+let keeperImages = [];     
 let introImages = {};
 let fade = 0;
 let fadeSpeed = 4;
@@ -24,7 +24,7 @@ let auraHumSound;
 
 // ⭐ 추가: 별자리 이미지와 URL을 저장할 외부 변수 ⭐
 let capturedConstellationImage = null; // p5.Graphics 객체 또는 p5.Image 객체가 저장될 변수
-let capturedConstellationURL = null;   // Base64 URL 문자열이 저장될 변수
+let capturedConstellationURL = null;   // Base64 URL 문자열이 저장될 변수
 
 function preload() {
     for (let i = 1; i <= 6; i++) {
@@ -98,7 +98,7 @@ function setup() {
         }
         sceneNumber = 2;
         currentIndex = 0;
-        selectedCard = [];
+        selectedCard = []; // 씬 전환 시 selectedCrad 초기화
         choosing.set(cardSets[currentIndex], cardBackImages);
         fade = 0;
     };
@@ -131,7 +131,7 @@ function setup() {
         transition: transitionSound
 
     };
-    outroScene = new OutroScene(introImages, sounds, returnToStart);  
+    outroScene = new OutroScene(introImages, sounds, returnToStart);  
 
     cardSets = [
     {
@@ -173,7 +173,7 @@ function setup() {
       ]
     },
     {
-      storyText: "나의 육신은 [ ] 잠들지만,   나의 별자리는 [ ] 남아 그들에게 닿기를 바란다.",
+      storyText: "나의 육신은 [ ] 잠들지만,   나의 별자리는 [ ] 남아 그들에게 닿기를 바란다.",
       blanks: [
         {
           options: ["푸른 나무로", "한줌 흙으로", "깊은 바다에", "뜨거운 불꽃으로"],
@@ -195,6 +195,46 @@ function setup() {
   const updateSceneToConnecting = () => {
     sceneNumber = 3;
     fade = 0; // 페이드 효과를 위해 fade 값 초기화
+    
+    // ⭐ 여기에서 selectedCard에 임시 기본값 할당 ⭐
+    if (selectedCard.length === 0) {
+        console.warn("selectedCard가 비어있습니다. 랜덤한 기본값을 할당합니다.");
+        
+        let allPossibleCards = [];
+        // cardSets의 모든 옵션을 하나의 배열로 모읍니다.
+        cardSets.forEach(set => {
+            set.blanks.forEach(blank => {
+                blank.options.forEach((option, i) => {
+                    allPossibleCards.push({
+                        text: option,
+                        image: blank.images[i],
+                        nickName: blank.nickNames[i],
+                        colour: blank.colors[i],
+                        star: { x: 0, y: 0 } // star 위치는 Connecting 클래스에서 초기화하므로 여기서는 임의값
+                    });
+                });
+            });
+        });
+
+        // 모든 가능한 카드 중에서 6개를 랜덤하게 선택 (중복 없이)
+        // Fisher-Yates (Knuth) 셔플 알고리즘
+        for (let i = allPossibleCards.length - 1; i > 0; i--) {
+            const j = floor(random(i + 1));
+            [allPossibleCards[i], allPossibleCards[j]] = [allPossibleCards[j], allPossibleCards[i]];
+        }
+        
+        // 셔플된 배열에서 앞의 6개를 선택하여 selectedCard에 할당
+        selectedCard = allPossibleCards.slice(0, 6);
+
+        // 선택된 카드들의 초기 별 위치를 랜덤하게 지정
+        // 이 위치는 Connecting 클래스에서 사용되므로 적절한 범위를 설정합니다.
+        // 예를 들어, 화면의 20% ~ 80% 범위 내에서 랜덤하게 배치
+        selectedCard.forEach(card => {
+            card.star.x = random((windowWidth * 9) / 17, (windowWidth * 29) / 30);
+            card.star.y = random(windowHeight / 8, (windowHeight * 7) / 8);
+        });
+    }
+
     selectedWords = selectedCard.map(card => card.text);
     isGenerating = true;
 
@@ -206,7 +246,6 @@ function setup() {
         storyResult = result;
         isGenerating = false;
     });
-
     console.log("모든 카드 선택 완료, Connecting 씬으로 전환 시도:", sceneNumber);
 
     // Connecting 객체는 모든 카드 데이터가 준비된 후 한 번만 생성
@@ -223,6 +262,7 @@ function setup() {
         (img, url) => {
             capturedConstellationImage = img;
             capturedConstellationURL = url;
+            console.log(typeof(nameResult));
             console.log("별자리 완성! 이미지와 URL이 외부 변수에 저장되었습니다.");
             console.log("URL (일부):", capturedConstellationURL.substring(0, 50) + "...");
         },
@@ -280,7 +320,7 @@ function draw() {
             image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
             noTint();
             fade += fadeSpeed;
-            connecting.set(nameResult,storyResult);
+            connecting.set(nameResult,storyResult,selectedCard);
         } else {
           console.log(storyResult);
           console.log(nameResult);
@@ -411,13 +451,14 @@ async function createName() {
 async function createStory() {
     const prompt = `다음 단어들은 신화 창조를 위한 영감의 재료입니다.
     **제시된 단어를 이야기에 절대로 포함하지 마세요.**
-    **단어들의 의미와 분위기를 직관적으로 해석한 뒤, 그 느낌에 어울리는 신화를 10단어 이내로 간결하게 창작해주세요.**
+    **단어들의 의미와 분위기를 직관적으로 해석한 뒤, 그 느낌에 어울리는 신화를 15단어 이내로 간결하게 창작해주세요.**
 
     **출력 시 다음 사항을 반드시 지켜주세요:**
     1. **양 끝에 공백을 포함하지 않습니다.**
     2. **문장 부호는 마침표(.), 쉼표(,), 느낌표(!), 물음표(?)만 허용합니다. 이 외의 모든 특수 기호(예: *, #, @ 등)는 절대로 포함하지 않습니다.**
     3. **단어를 그대로 나열하거나 단순히 줄거리를 요약하지 말고, 상징과 은유를 활용하여 상상력 있는 신화를 만들어주세요.**
     4. **결과물은 반드시 단일 문자열이어야 합니다.**
+    5. **단어를 연결한 형식이 아니라 완전한 문장을 완성해주세요.**
 
     사용자 선택 단어: ${selectedWords.join(", ")}`;
 
@@ -451,47 +492,47 @@ async function createStory() {
     }
 }
 // async function saveCanvasAndGetUrl() { // 이 함수는 Connecting 클래스 내부에서 처리되므로 주석 처리하거나 제거 가능
-//     const dataUrl = canvas.toDataURL('image/png');
-//     try {
-//         const res = await fetch("http://localhost:3000/save-image", {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify({ imageData: dataUrl })
-//         });
-//         if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
-//         const data = await res.json();
-//         return data.imageUrl;
-//     } catch (err) {
-//         console.error("캔버스 저장 실패:", err);
-//         return null;
-//     }
+//     const dataUrl = canvas.toDataURL('image/png');
+//     try {
+//         const res = await fetch("http://localhost:3000/save-image", {
+//             method: "POST",
+//             headers: { "Content-Type": "application/json" },
+//             body: JSON.stringify({ imageData: dataUrl })
+//         });
+//         if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+//         const data = await res.json();
+//         return data.imageUrl;
+//     } catch (err) {
+//         console.error("캔버스 저장 실패:", err);
+//         return null;
+//     }
 // }
 
 
 // [테스트용 임시 코드]
 async function keyPressed() {
-    // 키보드의 't' 또는 'T' 키를 누르면
-    if (key === 't' || key === 'T') {
-        console.log("테스트 시작: 캔버스 저장 및 QR 생성");
+    // 키보드의 't' 또는 'T' 키를 누르면
+    if (key === 't' || key === 'T') {
+        console.log("테스트 시작: 캔버스 저장 및 QR 생성");
 
-        // ⭐ 이미 Connecting 클래스에서 capturedConstellationImage와 URL을 외부에 저장했으므로,
-        // 이 테스트 코드에서는 해당 외부 변수를 직접 사용합니다. ⭐
-        if (capturedConstellationImage && capturedConstellationURL) {
-            console.log("테스트 성공: 이미지 URL 받음 ->", capturedConstellationURL);
-            // 받은 URL로 OutroScene의 QR코드를 설정합니다.
-            outroScene.setQRCodeUrl(capturedConstellationURL);
-            outroScene.setFinalConstellationImage(capturedConstellationImage); // OutroScene에 이미지도 전달
+        // ⭐ 이미 Connecting 클래스에서 capturedConstellationImage와 URL을 외부에 저장했으므로,
+        // 이 테스트 코드에서는 해당 외부 변수를 직접 사용합니다. ⭐
+        if (capturedConstellationImage && capturedConstellationURL) {
+            console.log("테스트 성공: 이미지 URL 받음 ->", capturedConstellationURL);
+            // 받은 URL로 OutroScene의 QR코드를 설정합니다.
+            outroScene.setQRCodeUrl(capturedConstellationURL);
+            outroScene.setFinalConstellationImage(capturedConstellationImage); // OutroScene에 이미지도 전달
 
-            // 강제로 Scene 4 (아웃트로)로 전환합니다.
-            sceneNumber = 4;
-            outroScene.sceneState = 'QR_CODE_PATH'; 
-            console.log("테스트: Scene 4로 전환합니다.");
-        } else {
-            console.error("테스트 실패: 캡처된 별자리 이미지 또는 URL이 없습니다. 먼저 '별자리 완성' 버튼을 눌러주세요.");
-            // 임시로 아무 이미지나 QR로 설정하고 싶다면 아래 주석을 해제하세요.
-            // outroScene.setQRCodeUrl('https://example.com/some_default_image.png');
-            // sceneNumber = 4;
-            // outroScene.sceneState = 'QR_CODE_PATH'; 
-        }
-    }
+            // 강제로 Scene 4 (아웃트로)로 전환합니다.
+            sceneNumber = 4;
+            outroScene.sceneState = 'QR_CODE_PATH'; 
+            console.log("테스트: Scene 4로 전환합니다.");
+        } else {
+            console.error("테스트 실패: 캡처된 별자리 이미지 또는 URL이 없습니다. 먼저 '별자리 완성' 버튼을 눌러주세요.");
+            // 임시로 아무 이미지나 QR로 설정하고 싶다면 아래 주석을 해제하세요.
+            // outroScene.setQRCodeUrl('https://example.com/some_default_image.png');
+            // sceneNumber = 4;
+            // outroScene.sceneState = 'QR_CODE_PATH'; 
+        }
+    }
 }

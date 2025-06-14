@@ -60,9 +60,10 @@ class Connecting{
             this.starPositions[i].alpha = min(255, this.starPositions[i].alpha + 2);
         }
     }
-    set(nameResult,storyResult){
+    set(nameResult,storyResult,selectedCard){
         this.nameResult = nameResult;
         this.storyResult = storyResult;
+        this.selectedCard = selectedCard;
         for (let i = 0; i<starNames.length; i++){
             if(nameResult == starNames[i]){
                 this.starImage = this.starImages[i];
@@ -179,6 +180,7 @@ class Connecting{
                 this.keeperState = "done";
                 if (this.index === 6){
                     if (this.updateSceneNumber) { // 콜백 함수가 존재하는지 확인
+                        console.log(this.selectedCard.length);
                 this.updateSceneNumber(); // 외부 sceneNumber 증가 함수 호출
             }
                 }
