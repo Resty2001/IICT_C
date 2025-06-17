@@ -9,7 +9,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = []; // 이 변수에 선택된 카드들이 저장됩니다.
 let cardBackImages = [];
-let sceneNumber = 2;
+let sceneNumber = 1;
 let introScene, outroScene;
 let keeperImages = [];     
 let introImages = {};
@@ -52,6 +52,9 @@ function preload() {
     ]
     keeperImage = loadImage('assets/grandpa.first.png')
     backGroundImage = loadImage("assets/Nightsky_Blank.png");
+    introImages.startBg = loadImage('assets/startBg.png');
+    introImages.title = loadImage('assets/title.png');
+    introImages.startButton = loadImage('assets/button.png');
     introImages.mainBackground = loadImage('assets/Nightsky_Blank(2).png');
     introImages.mainBackground2 = loadImage('assets/Nightsky_Blank.png');
     introImages.subBackground = loadImage('assets/subBackground.png');
@@ -83,6 +86,8 @@ function preload() {
     sounds.transition = loadSound('assets/transition(2).mp3');
     sounds.aura = loadSound('assets/auraHum.mp3');
     sounds.smallLaugh = loadSound('assets/smallLaugh.mp3'); 
+    sounds.click = loadSound('assets/click.mp3');
+    sounds.shootingStar = loadSound('assets/shootingStar.mp3');
 }
 
 
@@ -511,6 +516,9 @@ async function createStory() {
 
 // [테스트용 임시 코드]
 async function keyPressed() {
+    if (sceneNumber === 1 && introScene) {
+        introScene.handleKeyPressed();
+    }
     // 키보드의 't' 또는 'T' 키를 누르면
     if (key === 't' || key === 'T') {
         console.log("테스트 시작: 캔버스 저장 및 QR 생성");
