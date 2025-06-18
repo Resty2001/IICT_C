@@ -314,7 +314,7 @@ const updateSceneToConnecting = () => {
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);
     textBoxImage = introImages.textBox;
-    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage、sounds.click);
+    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage);
 
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
