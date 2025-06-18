@@ -33,6 +33,8 @@ let isCardDesignTestMode = true;
 let capturedConstellationImage = null; // p5.Graphics 객체 또는 p5.Image 객체가 저장될 변수
 let capturedConstellationURL = null;   // Base64 URL 문자열이 저장될 변수
 
+let cardClickSound; // 전역 변수로 사운드 객체 선언
+
 function preload() {
     for (let i = 1; i <= 6; i++) {
         for (let j = 1; j <= 4; j++){
@@ -99,6 +101,7 @@ function preload() {
     sounds.smallLaugh = loadSound('assets/smallLaugh.mp3'); 
     sounds.click = loadSound('assets/click.mp3');
     sounds.shootingStar = loadSound('assets/shootingStar.mp3');
+
 }
 
 
@@ -308,7 +311,7 @@ const updateSceneToConnecting = () => {
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);
     textBoxImage = introImages.textBox;
-    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage);
+    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage、sounds.click);
 
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
