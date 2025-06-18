@@ -3,15 +3,15 @@ let storyText = "";
 let nameResult = "";
 let storyResult = "";
 let isGenerating = false;
-let choosing,connecting, backGroundImage, textBoxImage, keeperImage;
+let choosing,connecting, backGroundImage, textBoxImage, keeperImage, newStarImage;
 let selectedWords = [];
 let imgList = [];
 let cardSets = [];
 let selectedCard = []; // 이 변수에 선택된 카드들이 저장됩니다.
 let cardBackImages = [];
-let sceneNumber = 1;
+let sceneNumber = 2;
 let introScene, outroScene;
-let keeperImages = [];     
+let keeperImages = [];
 let introImages = {};
 let fade = 0;
 let fadeSpeed = 4;
@@ -39,6 +39,7 @@ function preload() {
             imgList.push(loadImage("assets/" + i + "-" + j + ".png"));
         }
     }
+    newStarImage = loadImage('assets/star.jpg');
     starImages.push(loadImage("assets/hammer.png"));
     starImages.push(loadImage("assets/loom.png"));
     starImages.push(loadImage("assets/anvil.png"));
@@ -152,7 +153,7 @@ const returnToStart = () => {
 
     cardSets = [
     {
-      storyText: "[ ] 날에 태어난 나는 어릴 적부터 [ ] 꿈꾸었다.",
+      storyText: "[ ? ] 날에 태어난 나는 어릴 적부터 [ ] 꿈꾸었다.",
       blanks: [
         {
           options: ["꽃이 만개하던", "햇살이 타오르던", "낙엽이 물들던", "함박눈이 내리던"],
@@ -171,7 +172,7 @@ const returnToStart = () => {
       ]
     },
     {
-      storyText: "나에게 가장 큰 가치는 [ ]이었고, 삶의 가장 큰 시련은 [ ]이었다.",
+      storyText: "나에게 가장 큰 가치는 [ ? ]이었고, 삶의 가장 큰 시련은 [ ]이었다.",
       blanks: [
         {
           options: ["소중한 인연", "세상의 인정", "간절했던 꿈", "몸과 마음의 안정"],
@@ -190,10 +191,10 @@ const returnToStart = () => {
       ]
     },
     {
-      storyText: "나의 육신은 [ ] 잠들지만,   나의 별자리는 [ ] 남아 그들에게 닿기를 바란다.",
+      storyText: "나의 육신은 [ ? ] 잠들지만, 나의 별자리는 [ ] 남아 그들에게 닿기를 바란다.",
       blanks: [
         {
-          options: ["푸른 나무로", "한줌 흙으로", "깊은 바다에", "뜨거운 불꽃으로"],
+          options: ["푸른 나무에", "한줌 흙으로", "깊은 바다에", "뜨거운 불꽃으로"],
           images: [imgList[16], imgList[17], imgList[18], imgList[19]],
           bgms: [0,0,0,0],
           nickNames: ["생명의","대지의","심연의","불멸의"],
@@ -307,7 +308,7 @@ const updateSceneToConnecting = () => {
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);
     textBoxImage = introImages.textBox;
-    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting);
+    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage);
 
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
@@ -377,14 +378,6 @@ function mousePressed() {
         choosing.mousePressed(updateSceneToConnecting);
       }
     else{
-        
-    //     createName(selectedWords).then(result => {
-    //     nameResult = result;
-    // });
-    // createStory(selectedWords).then(result => {
-    //     storyResult = result;
-    //     isGenerating = false;
-    // });
         let next = ++currentIndex;
         if (next < cardSets.length) {
             let set = cardSets[next];

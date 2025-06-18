@@ -60,16 +60,6 @@ class Connecting{
             this.starPositions[i].alpha = min(255, this.starPositions[i].alpha + 2);
         }
     }
-    set(nameResult,storyResult,selectedCard){
-        this.nameResult = nameResult;
-        this.storyResult = storyResult;
-        this.selectedCard = selectedCard;
-        for (let i = 0; i<starNames.length; i++){
-            if(nameResult == starNames[i]){
-                this.starImage = this.starImages[i];
-            }
-        }
-}
 
     show() {
         // console.log(this.index); // 디버깅 용도, 필요 없으면 제거하세요.

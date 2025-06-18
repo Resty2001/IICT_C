@@ -2,10 +2,10 @@ class Particle {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.radius = random(1, 3);
+    this.radius = random(3,7);
     this.alpha = 255;
-    this.vx = random(-0.5, 0.5);
-    this.vy = random(-0.5, 0.5);
+    this.vx = random(-1, 1);
+    this.vy = random(-1, 1);
   }
 
   update() {
@@ -20,7 +20,7 @@ class Particle {
 
   show() {
     noStroke();
-    fill(255, 255, 200, this.alpha);
+    fill(255, this.alpha);
     ellipse(this.x, this.y, this.radius * 2);
   }
 }
@@ -57,23 +57,24 @@ const texts = [
 ];
 
 class Choosing {
-  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback) {
+  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback, newStarImage) {
     this.sceneTransitionCallback = sceneTransitionCallback;
     this.cardSet = null;
     this.storyText = "";
     this.selectedCard = selectedCard;
-    this.cardWidth = windowWidth / 11;
-    this.cardHeight = windowHeight / 4;
+    this.cardWidth = windowWidth / 9;
+    this.cardHeight = this.cardWidth * 3 / 2;
+    this.newStarImage = newStarImage;
 
     this.displayedText = "";
     this.charIndex = 0;
-    this.interval = 3;
-    this.fontSize = 50;
+    this.interval = 2;
+    // this.fontSize는 setupUIElements에서 설정됩니다.
 
-    this.boxX = windowWidth / 20;
-    this.boxY = windowHeight / 6;
-    this.boxW = (windowWidth * 2) / 5;
-    this.boxH = 160;
+    // --- References for scaling ---
+    this.ORIGINAL_WIDTH = 1920;
+    this.ORIGINAL_HEIGHT = 1080;
+    // ---
 
     this.cardRects = [];
     this.hoveredIndex = -1;
@@ -103,7 +104,71 @@ class Choosing {
     this.idx = 0;
     this.keeperText = "";
     this.keeperIndex = 0;
+    this.isTypingKeeper = false;
+
+    // UI 요소들의 rect 객체를 선언합니다.
+    this.dialogueBoxRect = {}; // keeper 대화창
+    this.arrowRect = {};       // keeper 대화창 아래 삼각형
+    this.keeperRect = {};      // keeper 이미지
+    this.storyTextBoxRect = {}; // 카드 선택 후 스토리 텍스트 박스
+
+    // UI 요소들의 크기와 위치를 설정하는 함수를 호출합니다.
+    this.setupUIElements();
   }
+
+  // --- UI 요소들의 크기와 위치를 설정하는 메서드 ---
+  setupUIElements() {
+    let scaleX = width / this.ORIGINAL_WIDTH;
+    let scaleY = height / this.ORIGINAL_HEIGHT;
+    let avgScale = (scaleX + scaleY) / 2;
+
+    // Keeper 대화 박스 (drawKeeperInteraction에서 사용)
+    let dialogueBoxMargin = 50 * scaleX;
+    let dialogueBoxH = 300 * scaleY;
+    this.dialogueBoxRect = {
+      x: dialogueBoxMargin,
+      y: height - dialogueBoxH - (30 * scaleY),
+      w: width - (2 * dialogueBoxMargin),
+      h: dialogueBoxH
+    };
+
+    // Keeper 대화창 아래 삼각형 (drawKeeperInteraction에서 사용)
+    let arrowSize = 40 * Math.min(scaleX, scaleY);
+    this.arrowRect = {
+      x: this.dialogueBoxRect.x + this.dialogueBoxRect.w - (125 * scaleX),
+      y: this.dialogueBoxRect.y + this.dialogueBoxRect.h - (90 * scaleY),
+      w: arrowSize,
+      h: arrowSize
+    };
+
+    // Keeper 이미지 (drawKeeperInteraction에서 사용)
+    let keeperOriginalW = 600;
+    let keeperH = (keeperOriginalW * scaleX) * (900 / keeperOriginalW);
+    this.keeperRect = {
+      x: width / 2, // 중앙 정렬
+      y: height * 5 / 11 + (150 * scaleY),
+      w: keeperOriginalW * scaleX,
+      h: keeperH
+    };
+
+    // **새로운 스토리 텍스트 박스 (displayText에서 사용)**
+    // 이전에 고정된 this.boxX, this.boxY, this.boxW, this.boxH를 대체합니다.
+    this.storyTextBoxRect = {
+      // 텍스트 박스 자체를 중앙에 위치시키기 위한 x, y (text()의 중앙정렬과 별개)
+      x: width / 2,
+      y: height * 9 / 17, // 원본 코드의 this.boxY와 동일한 비율로 유지
+      w: width * 0.8,    // 화면 너비의 80%를 사용 (조절 가능)
+      h: 160 * scaleY   // 원본 높이 160px을 화면 비율에 맞게 스케일
+    };
+
+
+    // 텍스트 관련 속성 (Keeper 대화와 스토리 텍스트 모두에 적용될 수 있도록)
+    this.fontSize = 36 * avgScale; // 메인 텍스트 폰트 크기
+    this.textPaddingX = 100 * scaleX; // 텍스트 박스 좌우 패딩
+    this.textPaddingY = 60 * scaleY; // 텍스트 박스 상하 패딩 (실제 텍스트 시작 위치에 영향)
+    this.speakerTextSize = 40 * avgScale; // 화자 이름 폰트 크기 (현재는 사용 안 함)
+  }
+  // ---
 
   set(cardSet, cardBackImages) {
     this.cardSet = cardSet;
@@ -121,10 +186,16 @@ class Choosing {
     if (this.selectedCard.length === 0) {
       this.keeperState = "showing";
       this.keeperAlpha = 0;
+      this.isTypingKeeper = true; // Start typing when keeper appears
+      this.keeperText = ""; // Clear keeper text for new dialogue
+      this.keeperIndex = 0; // Reset keeper typing index
     }
   }
 
   update() {
+    // Re-calculate UI elements if window size changes (optional, but good for responsiveness)
+    this.setupUIElements();
+
     for (let i = 0; i < this.hoverAngles.length; i++) {
       let target = (i === this.hoveredIndex) ? PI : 0;
       this.hoverAngles[i] = lerp(this.hoverAngles[i], target, 0.07);
@@ -139,6 +210,29 @@ class Choosing {
         }
       }
     }
+    // **카드 애니메이션 중일 때 Trail 파티클 생성**
+    if (this.animating && this.animatingCard) {
+      const anim = this.animatingCard;
+      const t = constrain(
+        (frameCount - this.animationStart) / this.fadeDuration,
+        0,
+        1
+      );
+
+      // 현재 카드의 위치 계산
+      let currentCardX = lerp(anim.startX, anim.targetX - anim.cardW / 2, t);
+      let currentCardY =
+        lerp(anim.startY, anim.targetY - anim.cardH / 2, t) -
+        anim.arcHeight * sin(t * PI);
+
+      // 주기적으로 파티클 생성 (프레임 단위로 조절 가능)
+      if (frameCount % 3 === 0) { // 3프레임마다 파티클 1개 생성
+        // 파티클 생성 위치를 카드의 중심 또는 약간 뒤쪽으로 조절
+        particleManager.add(currentCardX + anim.cardW / 2, currentCardY + anim.cardH / 2, 1);
+      }
+    }
+
+    particleManager.updateAndShow();
   }
 
   show() {
@@ -147,7 +241,7 @@ class Choosing {
     let images = currentBlank.images;
 
     this.cardRects = [];
-    if (this.keeperState != "done") {
+    if (this.keeperState !== "done") {
       if (this.keeperState === "showing") {
         this.keeperAlpha = min(255, this.keeperAlpha + this.keeperFadeInSpeed);
         if (this.keeperAlpha === 255 && this.keeperText === texts[this.idx]) {
@@ -155,12 +249,12 @@ class Choosing {
         }
       }
       this.drawKeeperInteraction();
-      return; // ⭐ 카드 UI는 렌더링하지 않음
+      return;
     }
 
     for (let c = 0; c < options.length; c++) {
-      let x = windowWidth / 30 + (windowWidth / 9) * c;
-      let baseY = windowHeight - this.cardHeight - windowHeight / 10;
+      let x = this.cardWidth + (this.cardWidth * 2) * c;
+      let baseY = windowHeight - this.cardHeight - windowHeight / 20;
       let w = this.cardWidth;
       let h = this.cardHeight;
 
@@ -180,13 +274,14 @@ class Choosing {
         if (c === this.selectedIndex) {
           const anim = this.animatingCard;
           if (anim) {
-            let progress = easeOutCubic(t);
-            x = lerp(anim.startX, anim.targetX - w / 2, progress);
+            // 카드의 최종 위치가 anim.targetX, anim.targetY 이므로,
+            // image() 함수에 적합하도록 (중앙 정렬이면 -w/2, -h/2 가 필요) 보정합니다.
+            x = lerp(anim.startX, anim.targetX - w / 2, t);
             y =
-              lerp(anim.startY, anim.targetY - h / 2, progress) -
-              anim.arcHeight * sin(progress * PI);
-            scaleAmt = lerp(1, 0.08, progress);
-            alpha = 255 * (1 - progress);
+              lerp(anim.startY, anim.targetY - h / 2, t) -
+              anim.arcHeight * sin(t * PI);
+            scaleAmt = lerp(1, 0.08, t);
+            alpha = 255 * (1 - t);
           }
           showFront = true;
         } else {
@@ -229,8 +324,9 @@ class Choosing {
 
       // Draw the core star
       noStroke();
-      fill(255, star.alpha);
-      ellipse(0, 0, 10);
+      tint(255,star.alpha);
+      image(this.newStarImage, 0, 0, windowWidth*windowHeight/50000,windowWidth*windowHeight/50000);
+      noTint();
 
       // Glow effect
       if (star.alpha === 255) {
@@ -244,8 +340,6 @@ class Choosing {
 
       pop();
     }
-
-    particleManager.updateAndShow();
   }
 
   drawCardFront(x, y, w, h, img, label, alpha) {
@@ -271,46 +365,67 @@ class Choosing {
 
     pop();
   }
+
   drawKeeperInteraction() {
+    let scaleX = width / this.ORIGINAL_WIDTH;
+    let scaleY = height / this.ORIGINAL_HEIGHT;
+
     // keeper 이미지 (페이드인)
     push();
     tint(255, this.keeperAlpha);
     imageMode(CENTER);
     image(
       this.keeperImages[this.idx],
-      windowWidth / 2,
-      windowHeight / 2,
-      windowWidth / 3,
-      (windowHeight * 10) / 11
+      this.keeperRect.x,
+      this.keeperRect.y,
+      this.keeperRect.w,
+      this.keeperRect.h
     );
     pop();
 
     // 텍스트 박스
-    const boxWidth = (windowWidth * 18) / 19;
-    const boxHeight = windowHeight / 4;
-    const boxX = windowWidth / 2;
-    const boxY = windowHeight - boxHeight / 2 - 50;
-
     imageMode(CENTER);
-    image(this.textBox, boxX, boxY, boxWidth, boxHeight);
+    tint(255, 255); // Reset tint for text box to full opacity
+    image(this.textBox, this.dialogueBoxRect.x + this.dialogueBoxRect.w / 2,
+      this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2,
+      this.dialogueBoxRect.w, this.dialogueBoxRect.h);
+    noTint(); // Clear tint after drawing the image
 
-    // 텍스트 출력
-    const textX = windowWidth / 13;
-    const textY = windowHeight - (boxHeight * 9) / 10;
-    if (
-      frameCount % this.interval === 0 &&
-      this.keeperIndex < texts[this.idx].length
-    ) {
-      this.keeperText += texts[this.idx][this.keeperIndex];
-      this.keeperIndex++;
+    const textX = this.dialogueBoxRect.x + this.textPaddingX;
+    // 텍스트 Y 시작 위치를 텍스트 박스 상단 패딩만큼만 띄우도록 수정
+    const textY = this.dialogueBoxRect.y + this.textPaddingY;
+
+    // 텍스트 영역의 너비 계산은 그대로
+    const textBoxContentWidth = this.dialogueBoxRect.w - (this.textPaddingX * 2);
+    // 텍스트 영역의 높이 계산: 전체 텍스트 박스 높이에서 상하 패딩을 뺀 값
+    const textBoxContentHeight = this.dialogueBoxRect.h - (this.textPaddingY * 2);
+
+
+    if (this.isTypingKeeper) {
+      if (frameCount % this.interval === 0 && this.keeperIndex < texts[this.idx].length) {
+        this.keeperText += texts[this.idx][this.keeperIndex];
+        this.keeperIndex++;
+      } else if (this.keeperIndex >= texts[this.idx].length) {
+        this.isTypingKeeper = false; // Typing finished
+      }
     }
 
     fill(255, this.keeperAlpha);
     noStroke();
-    textSize(this.fontSize); // 약간 줄임
+    textSize(this.fontSize);
+    textLeading(this.fontSize * 1.5); 
     textAlign(LEFT, TOP);
-    let wrapped = this.wrapText(this.keeperText, boxWidth - 40);
-    text(wrapped, textX, textY);
+    let wrapped = this.wrapText(this.keeperText, textBoxContentWidth);
+ text(wrapped, textX, textY, textBoxContentWidth, textBoxContentHeight);
+
+    // Show pulsing triangle when typing is finished
+    if (!this.isTypingKeeper) {
+      let arrowAlpha = map(sin(millis() * 0.005), -1, 1, 90, 220); // Pulsing effect
+      fill(255, arrowAlpha);
+      noStroke();
+      let ar = this.arrowRect;
+      triangle(ar.x, ar.y, ar.x + ar.w, ar.y, ar.x + ar.w / 2, ar.y + ar.h);
+    }
   }
 
   displayText() {
@@ -323,13 +438,19 @@ class Choosing {
         this.charIndex++;
       }
 
-      fill(255, 254, 180);
+      fill(255);
       noStroke();
       textSize(this.fontSize);
-      textAlign(LEFT, TOP);
+      textAlign(CENTER, CENTER); // 스토리 텍스트는 중앙 정렬 유지
 
-      let wrapped = this.wrapText(this.displayedText, this.boxW);
-      text(wrapped, this.boxX, this.boxY);
+      let textDrawX = this.storyTextBoxRect.x - this.storyTextBoxRect.w/2;
+      let textDrawY = this.storyTextBoxRect.y - this.storyTextBoxRect.h / 2;
+      let textDrawWidth = this.storyTextBoxRect.w;
+      let textDrawHeight = this.storyTextBoxRect.h; // 이 높이 안에서 텍스트가 줄바꿈됩니다.
+
+      let wrapped = this.wrapText(this.displayedText, textDrawWidth);
+      text(wrapped, textDrawX, textDrawY, textDrawWidth, textDrawHeight);
+      
     }
   }
 
@@ -367,16 +488,41 @@ class Choosing {
   }
 
   handleMousePressed(callbackForNextSet) {
-    if (this.keeperState === "waiting") {
-      this.keeperAlpha = 0;
-      if (this.selectedCard.length === 6 && this.idx === (texts.length - 1)) {
-                if (this.sceneTransitionCallback) {
-                    this.sceneTransitionCallback(); 
-                }
+    // Re-calculate UI elements on mouse press in case of dynamic resizing
+    this.setupUIElements();
+
+    // Check if the click is within the keeper's text box when keeper is active
+    const textBoxRect = {
+      x: this.dialogueBoxRect.x,
+      y: this.dialogueBoxRect.y,
+      w: this.dialogueBoxRect.w,
+      h: this.dialogueBoxRect.h
+    };
+
+    if (this.keeperState === "showing" || this.keeperState === "waiting") {
+      if (mouseX > textBoxRect.x && mouseX < textBoxRect.x + textBoxRect.w &&
+        mouseY > textBoxRect.y && mouseY < textBoxRect.y + textBoxRect.h) {
+        if (this.isTypingKeeper) {
+          // Skip typing animation
+          this.keeperText = texts[this.idx];
+          this.keeperIndex = texts[this.idx].length;
+          this.isTypingKeeper = false;
+          this.keeperAlpha = 200;
+        } 
+        else if (this.keeperState === "waiting") {
+          // Advance dialogue after typing is complete
+          this.keeperAlpha = 0;
+          if (this.selectedCard.length === 6 && this.idx === (texts.length - 1)) {
+            if (this.sceneTransitionCallback) {
+              this.sceneTransitionCallback();
             }
-      this.keeperState = "done";
+          }
+          this.keeperState = "done";
+        }
+      }
       return;
     }
+
     if (this.animating) return;
 
     for (let card of this.cardRects) {
@@ -402,8 +548,8 @@ class Choosing {
         let minDist = 50;
         for (let tries = 0; tries < maxTries; tries++) {
           let tempStar = {
-            x: random((windowWidth * 9) / 17, (windowWidth * 29) / 30),
-            y: random(windowHeight / 8, (windowHeight * 7) / 8),
+            x: random(windowWidth / 2 - windowHeight / 4, windowWidth / 2 + windowHeight / 4),
+            y: random(windowHeight / 30, windowHeight / 2),
           };
           let tooClose = this.starPositions.some(
             (s) => dist(s.x, s.y, tempStar.x, tempStar.y) < minDist
@@ -421,17 +567,34 @@ class Choosing {
           targetX: newStar.x,
           targetY: newStar.y,
           arcHeight: 80,
+          cardW: card.w, // 애니메이션 중인 카드의 너비를 저장
+          cardH: card.h
         };
 
-        // 2초 후 텍스트 반영
         setTimeout(() => {
-          const blankPlaceholder = "[ ]";
-          let blankPos = this.storyText.indexOf(blankPlaceholder);
-          if (blankPos !== -1) {
+          const questionBlank = "[ ? ]";
+          const normalBlank = "[ ]";
+          const word = selectedWord;
+
+          // 현재 선택할 차례인 [ ? ] 찾기
+          let questionIndex = this.storyText.indexOf(questionBlank);
+          if (questionIndex !== -1) {
+            // [ ? ] → 선택된 단어로 대체
             this.storyText =
-              this.storyText.slice(0, blankPos) +
-              `[${selectedWord}]` +
-              this.storyText.slice(blankPos + blankPlaceholder.length);
+              this.storyText.slice(0, questionIndex) +
+              word +
+              this.storyText.slice(questionIndex + questionBlank.length);
+
+            // 다음 [ ] → [ ? ]로 변경
+            let nextBlankIndex = this.storyText.indexOf(normalBlank, questionIndex + word.length);
+            if (nextBlankIndex !== -1) {
+              this.storyText =
+                this.storyText.slice(0, nextBlankIndex) +
+                questionBlank +
+                this.storyText.slice(nextBlankIndex + normalBlank.length);
+            }
+
+            // 텍스트 갱신
             this.displayedText = this.storyText.substring(0, this.charIndex);
           }
 
@@ -454,7 +617,7 @@ class Choosing {
             nickName: currentBlank.nickNames[card.index],
             colour: currentBlank.colors[card.index],
           });
-        console.log(this.selectedCard[this.selectedCard.length-1].star.x)
+          console.log(this.selectedCard[this.selectedCard.length - 1].star.x)
 
           if (this.blankIndex === 0) {
             this.blankIndex = 1;
@@ -469,6 +632,7 @@ class Choosing {
               this.keeperIndex = 0;
               this.keeperText = "";
               this.idx = this.selectedCard.length / 2;
+              this.isTypingKeeper = true; // Start typing for the next keeper dialogue
               this.animating = false;
               this.selectedIndex = -1;
               callbackForNextSet();
