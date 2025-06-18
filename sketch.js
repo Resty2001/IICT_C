@@ -39,7 +39,7 @@ function preload() {
             imgList.push(loadImage("assets/" + i + "-" + j + ".png"));
         }
     }
-    newStarImage = loadImage('assets/star.jpg');
+    newStarImage = loadImage('assets/Star_nobackground.png');
     starImages.push(loadImage("assets/hammer.png"));
     starImages.push(loadImage("assets/loom.png"));
     starImages.push(loadImage("assets/anvil.png"));
@@ -299,7 +299,7 @@ const updateSceneToConnecting = () => {
     keeperImages.push(introImages.keeper_talk3);
     keeperImages.push(introImages.keeper_smile1);
     keeperImages.push(introImages.keeper_talk1);
-    keeperImages.push(keeperImage);
+    keeperImages.push(introImages.keeper_talk2);
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);

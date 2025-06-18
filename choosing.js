@@ -2,7 +2,7 @@ class Particle {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.radius = random(3,7);
+    this.radius = random(3,5);
     this.alpha = 255;
     this.vx = random(-1, 1);
     this.vy = random(-1, 1);
@@ -65,6 +65,7 @@ class Choosing {
     this.cardWidth = windowWidth / 9;
     this.cardHeight = this.cardWidth * 3 / 2;
     this.newStarImage = newStarImage;
+    this.starGlowing = false;
 
     this.displayedText = "";
     this.charIndex = 0;
@@ -195,6 +196,7 @@ class Choosing {
   update() {
     // Re-calculate UI elements if window size changes (optional, but good for responsiveness)
     this.setupUIElements();
+    if(this.keeperState === "done"){
 
     for (let i = 0; i < this.hoverAngles.length; i++) {
       let target = (i === this.hoveredIndex) ? PI : 0;
@@ -202,36 +204,43 @@ class Choosing {
     }
 
     for (let star of this.starPositions) {
-      star.alpha = min(255, star.alpha + 4);
-      if (star.alpha === 255) {
-        star.sparkleTimer++;
+        star.sparkleTimer++; // 각 별의 타이머를 독립적으로 증가
+
+        // 알파 값을 사인 함수로 조절하여 반짝임 효과 구현
+        // 0.05는 반짝임 속도를 조절하는 값, 50은 최소 알파, 255는 최대 알파
+        star.alpha = map(sin(star.sparkleTimer * 0.05), -1, 1, 50, 255);
+
+        // 별 생성 시점에서 파티클 추가하는 로직 (기존과 동일)
         if (star.sparkleTimer % 10 === 0) {
           particleManager.add(star.x, star.y, 2);
         }
       }
-    }
-    // **카드 애니메이션 중일 때 Trail 파티클 생성**
-    if (this.animating && this.animatingCard) {
-      const anim = this.animatingCard;
-      const t = constrain(
-        (frameCount - this.animationStart) / this.fadeDuration,
-        0,
-        1
-      );
 
-      // 현재 카드의 위치 계산
-      let currentCardX = lerp(anim.startX, anim.targetX - anim.cardW / 2, t);
-      let currentCardY =
-        lerp(anim.startY, anim.targetY - anim.cardH / 2, t) -
-        anim.arcHeight * sin(t * PI);
+      // **카드 애니메이션 중일 때 Trail 파티클 생성**
+      if (this.animating && this.animatingCard) {
+        const anim = this.animatingCard;
+        const t = constrain(
+          (frameCount - this.animationStart) / this.fadeDuration,
+          0,
+          1
+        );
 
-      // 주기적으로 파티클 생성 (프레임 단위로 조절 가능)
-      if (frameCount % 3 === 0) { // 3프레임마다 파티클 1개 생성
-        // 파티클 생성 위치를 카드의 중심 또는 약간 뒤쪽으로 조절
-        particleManager.add(currentCardX + anim.cardW / 2, currentCardY + anim.cardH / 2, 1);
+        // 현재 카드의 위치 계산
+        let currentCardX = lerp(anim.startX, anim.targetX - anim.cardW / 2, t);
+        let currentCardY =
+          lerp(anim.startY, anim.targetY - anim.cardH / 2, t) -
+          anim.arcHeight * sin(t * PI);
+
+        // 주기적으로 파티클 생성 (프레임 단위로 조절 가능)
+        if (frameCount % 3 === 0) { // 3프레임마다 파티클 1개 생성
+          // 파티클 생성 위치를 카드의 중심 또는 약간 뒤쪽으로 조절
+          particleManager.add(currentCardX + anim.cardW / 2, currentCardY + anim.cardH / 2, 1);
+        }
       }
-    }
+    } // end of if(this.keeperState === "done")
 
+    // Particle Manager는 keeperState와 관계없이 항상 업데이트되고 그려집니다.
+    // 이는 이펙트가 다른 UI 요소 위에 독립적으로 존재해야 하기 때문입니다.
     particleManager.updateAndShow();
   }
 
@@ -244,8 +253,8 @@ class Choosing {
     if (this.keeperState !== "done") {
       if (this.keeperState === "showing") {
         this.keeperAlpha = min(255, this.keeperAlpha + this.keeperFadeInSpeed);
-        if (this.keeperAlpha === 255 && this.keeperText === texts[this.idx]) {
-          this.keeperState = "waiting";
+         if (this.keeperAlpha === 255 && this.keeperText === texts[this.idx]) {
+           this.keeperState = "waiting";
         }
       }
       this.drawKeeperInteraction();
@@ -321,17 +330,20 @@ class Choosing {
     for (let star of this.starPositions) {
       push();
       translate(star.x, star.y);
+      imageMode(CENTER); // 이미지 중앙 정렬
 
       // Draw the core star
       noStroke();
-      tint(255,star.alpha);
-      image(this.newStarImage, 0, 0, windowWidth*windowHeight/50000,windowWidth*windowHeight/50000);
+      tint(255, star.alpha); // update()에서 계산된 star.alpha 적용
+      image(this.newStarImage, 0, 0, windowWidth * windowHeight / 30000, windowWidth * windowHeight / 30000);
       noTint();
 
-      // Glow effect
-      if (star.alpha === 255) {
+      // Glow effect (이미지 외곽 글로우)
+      // 별 이미지가 밝을 때만 글로우 효과를 나타내도록 조건 변경
+      if (star.alpha > 100) { // 알파 값이 100 이상일 때만 글로우 표시
         let glowSize = 10 + sin(star.sparkleTimer * 0.3) * 5;
-        stroke(255, 255, 255, 100 + 50 * sin(star.sparkleTimer * 0.4));
+        // 글로우의 알파 값도 star.alpha에 비례하도록 조절하여 함께 반짝이도록
+        stroke(255, 255, 255, map(star.alpha, 50, 255, 0, 150));
         strokeWeight(1.5);
         noFill();
         ellipse(0, 0, glowSize * 2, glowSize * 1.5);
