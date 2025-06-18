@@ -57,7 +57,7 @@ const texts = [
 ];
 
 class Choosing {
-  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback, newStarImage, cardClickSound) {
+  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback, newStarImage) {
     this.sceneTransitionCallback = sceneTransitionCallback;
     this.cardSet = null;
     this.storyText = "";
@@ -65,6 +65,7 @@ class Choosing {
     this.cardWidth = windowWidth / 9;
     this.cardHeight = this.cardWidth * 3 / 2;
     this.newStarImage = newStarImage;
+    
     this.starGlowing = false;
 
     this.displayedText = "";
@@ -115,7 +116,6 @@ class Choosing {
 
     // UI 요소들의 크기와 위치를 설정하는 함수를 호출합니다.
     this.setupUIElements();
-    this.cardClickSound = cardClickSound; // <-- 효과음 참조 저장
   }
 
   // --- UI 요소들의 크기와 위치를 설정하는 메서드 ---
@@ -548,10 +548,6 @@ class Choosing {
         this.selectedIndex = card.index;
         this.animating = true;
         this.animationStart = frameCount;
-
-        // --- 여기에 효과음 재생 코드 추가 ---
-        if (this.cardClickSound && typeof this.cardClickSound.play === 'function') {
-            this.cardClickSound.play();
         }
         // ------------------------------------
 
