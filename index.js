@@ -70,7 +70,7 @@ app.post('/save-image', (req, res) => {
                 return res.status(500).json({ error: '파일 저장에 실패했습니다.' });
             }
 
-            const imageUrl = `http://localhost:3000/cards/${fileName}`;
+            const imageUrl = `http://192.168.0.113:3000/cards/${fileName}`; // 테스트 시 본인 IP 주소 넣기.
             console.log("파일 저장 성공:", imageUrl);
             res.status(200).json({ imageUrl });
         });

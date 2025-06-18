@@ -26,6 +26,9 @@ let bgmExample1, doorOpenSound, bgmExample2;
 let bgmExample3, bgmExample4, transitionSound;
 let auraHumSound;
 
+let fontHSBombaram, fontOgR; // 글꼴을 저장할 변수
+let isCardDesignTestMode = true;
+
 // ⭐ 추가: 별자리 이미지와 URL을 저장할 외부 변수 ⭐
 let capturedConstellationImage = null; // p5.Graphics 객체 또는 p5.Image 객체가 저장될 변수
 let capturedConstellationURL = null;   // Base64 URL 문자열이 저장될 변수
@@ -77,8 +80,10 @@ function preload() {
     introImages.keeper_talk3 = loadImage('assets/keepertalk3.png');
     
     // --- 아웃트로용 이미지 로드 추가 ---
+    fontHSBombaram = loadFont('assets/HSBombaram.ttf');
+    fontOgR = loadFont('assets/ogR.ttf');
     introImages.qrCode = loadImage('assets/qrTest.png'); 
-    introImages.finalConstellationTest = loadImage('assets/taro.png'); 
+    introImages.finalConstellationTest = loadImage('assets/captureTest.png'); 
     introImages.buttonBg = loadImage('assets/button.png'); // 버튼 배경 이미지 로드
     introImages.taroBg = loadImage('assets/taro.png');
 
@@ -103,9 +108,14 @@ function setup() {
     const eachColor = [color(204, 0, 0),color(255, 222, 173),color(70, 80, 150),color(180, 130, 80),color(144, 238, 144),color(220, 220, 220)];
     // 카드 크기는 taro.png 원본 비율에 맞춰 설정하는 것이 좋습니다.
     const cardAspectRatio = 1200 / 800;
+     const cardFonts = {
+        title: fontHSBombaram,
+        story: fontOgR
+    };
+
     const cardWidth = 400;
     const cardHeight = cardWidth * cardAspectRatio;
-    constellationCardGenerator = new ConstellationCard(cardWidth, cardHeight, null);
+    constellationCardGenerator = new ConstellationCard(cardWidth, cardHeight, cardFonts);
 
 
     const goNextScene = () => {
@@ -119,18 +129,9 @@ function setup() {
         fade = 0;
     };
 
-    const returnToStart = () => {
-        // OutroScene에서 사용된 모든 BGM을 sounds 객체를 통해 정지시킵니다.
-        if (sounds.bgm3 && sounds.bgm3.isPlaying()) {
-            sounds.bgm3.stop();
-        }
-        if (sounds.bgm4 && sounds.bgm4.isPlaying()) {
-            sounds.bgm4.stop();
-        }
-
-        // 씬 번호를 1로 바꾸고 인트로 씬을 리셋합니다.
-        sceneNumber = 1;
-        if(introScene) introScene.reset(true);
+const returnToStart = () => {
+        // ⭐ [수정] 모든 것을 초기화하는 가장 확실한 방법은 페이지를 새로고침하는 것입니다.
+        window.location.reload();
     };
 
       const introSounds = {
@@ -577,8 +578,11 @@ async function keyPressed() {
             return;
         }
 
+        const testBgColor = testConstellationImage.get(5, 5);
+        const processedTestImage = removeBackgroundByColor(testConstellationImage, testBgColor, 80);
+
         const finalCardImage = constellationCardGenerator.createCardImage(
-            introImages.taroBg, testConstellationImage, testConstellationName, testConstellationStory
+            introImages.taroBg, processedTestImage, testConstellationName, testConstellationStory
         );
         const longDataURL = finalCardImage.canvas.toDataURL('image/png');
         
@@ -590,10 +594,6 @@ async function keyPressed() {
             outroScene.setFinalConstellationImage(finalCardImage);
             outroScene.setQRCodeUrl(shareableURL);
             sceneNumber = 4;
-            // BGM 전환
-            if (sounds.bgm1 && sounds.bgm1.isPlaying()) sounds.bgm1.stop();
-            if (sounds.bgm2 && sounds.bgm2.isPlaying()) sounds.bgm2.stop();
-            if (sounds.bgm3 && !sounds.bgm3.isPlaying()) sounds.bgm3.loop();
             console.warn("--- 테스트 모드 설정 완료 ---");
         } else {
             console.error("테스트 실패: 이미지 업로드 후 URL을 받아오지 못했습니다.");
@@ -602,4 +602,44 @@ async function keyPressed() {
     // ==================================================================
     // ⭐ 테스트 코드 블록 끝 ⭐
     // ==================================================================
+}
+
+
+
+// QR코드를 위한 별자리 배경 제거 코드
+
+/**
+ * 특정 색상과 유사한 배경을 제거하는 새로운 함수
+ * @param {p5.Image} sourceImage - 배경을 제거할 원본 이미지
+ * @param {p5.Color} targetColor - 제거할 배경의 기준 색상
+ * @param {number} tolerance - 색상 유사도 허용 범위. 클수록 더 넓은 범위의 색을 제거합니다.
+ * @returns {p5.Graphics} 배경이 제거된 새 그래픽 객체
+ */
+function removeBackgroundByColor(sourceImage, targetColor, tolerance) {
+  const result = createGraphics(sourceImage.width, sourceImage.height);
+  sourceImage.loadPixels();
+
+  const targetR = red(targetColor);
+  const targetG = green(targetColor);
+  const targetB = blue(targetColor);
+
+  for (let y = 0; y < sourceImage.height; y++) {
+    for (let x = 0; x < sourceImage.width; x++) {
+      const index = (y * sourceImage.width + x) * 4;
+      const r = sourceImage.pixels[index];
+      const g = sourceImage.pixels[index + 1];
+      const b = sourceImage.pixels[index + 2];
+      const a = sourceImage.pixels[index + 3];
+
+      // 기준색(targetColor)과 현재 픽셀 색상 사이의 거리를 계산합니다.
+      const d = dist(r, g, b, targetR, targetG, targetB);
+
+      // ⭐ 핵심 로직: 색상 거리가 허용 범위(tolerance)보다 클 경우에만 픽셀을 그립니다.
+      if (d > tolerance) {
+        result.stroke(r, g, b, a);
+        result.point(x, y);
+      }
+    }
+  }
+  return result;
 }

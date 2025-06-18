@@ -328,10 +328,12 @@ class Connecting{
                 // p5.Image 객체의 내부 canvas 엘리먼트에서 toDataURL()을 호출합니다.
                 // 이 방법은 P5.js 문서에서 권장하는 방식이며, 안정적으로 작동합니다.
                 this.myStarURL = this.myStar.canvas.toDataURL('image/png');
+                const bgColor = this.myStar.get(5, 5);
+                const constellationWithoutBg = removeBackgroundByColor(this.myStar, bgColor, 80);
                 
                 // ⭐ 별자리 이미지와 URL을 외부로 전달하는 콜백 함수 호출 ⭐
                 if (this.onConstellationComplete) {
-                    this.onConstellationComplete(this.myStar, this.myStarURL);
+                    this.onConstellationComplete(constellationWithoutBg, this.myStarURL);
                 }
 
                 this.index++; // 다음 단계로 이동

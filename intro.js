@@ -157,12 +157,14 @@ class IntroScene {
             case 'FADE_TO_MAIN':
                 this.drawFade('MONOLOGUE_FADE_OUT');
                 break;
-            case 'MAIN_MENU_FADE_IN':
+             case 'MAIN_MENU_FADE_IN':
+                if (this.sounds.bgm1) this.sounds.bgm1.setVolume(1, 0.5);
                 this.updateSkyMovement();
                 this.drawMainMenu();    
                 this.drawFade('MAIN_MENU_FADE_IN');
                 break;
             case 'MAIN_MENU':
+                if (this.sounds.bgm1) this.sounds.bgm1.setVolume(1, 0.5);
                 this.updateSkyMovement();
                 this.drawMainMenu();
                 break;
@@ -886,17 +888,34 @@ class IntroScene {
 /**
  * 타이틀 화면에 나타나는 별똥별 효과를 담당하는 클래스입니다.
  */
+// intro.js 파일의 ShootingStar 클래스를 찾아 아래 내용으로 교체해주세요.
+
+/**
+ * 타이틀 화면에 나타나는 별똥별 효과를 담당하는 클래스입니다.
+ */
 class ShootingStar {
     constructor() {
-        this.x = random(-width * 0.2, 0); 
-        this.y = random(0, height * 0.2);
+        // 1. 시작점을 화면의 위쪽 또는 왼쪽 가장자리에서 무작위로 선택
+        if (random() > 0.5) {
+            // 위쪽 가장자리에서 시작
+            this.x = random(width);
+            this.y = -10;
+        } else {
+            // 왼쪽 가장자리에서 시작
+            this.x = -10;
+            this.y = random(height);
+        }
 
+        // ⭐ [핵심 수정] 끝점은 항상 시작점 기준으로 오른쪽 아래를 향하도록 설정
+        // 이렇게 하면 모든 별똥별의 방향이 일관되게 유지됩니다.
+        const travelDistanceX = random(width * 0.8, width * 1.5);
+        const travelDistanceY = random(height * 0.8, height * 1.5);
+        this.endX = this.x + travelDistanceX;
+        this.endY = this.y + travelDistanceY;
 
-        this.endX = this.x + random(width * 1.1, width * 1.5);     
-        this.endY = this.y + random(height * 1.1, height * 1.5);   
-
-        this.speed = random(15, 25);
+        this.speed = random(12, 22);
         this.history = [];
+        this.trailLength = 25;
     }
 
     update() {
@@ -904,14 +923,13 @@ class ShootingStar {
         let dirY = this.endY - this.y;
         let d = dist(this.x, this.y, this.endX, this.endY);
 
-        // 목표 지점에 거의 도달하면 움직임을 멈춥니다.
         if (d > 1) {
             this.x += (dirX / d) * this.speed;
             this.y += (dirY / d) * this.speed;
         }
 
         this.history.push(createVector(this.x, this.y));
-        if (this.history.length > 20) {
+        if (this.history.length > this.trailLength) {
             this.history.splice(0, 1);
         }
     }
@@ -940,7 +958,7 @@ class ShootingStar {
     }
     
     isFinished() {
-        // 별똥별이 화면 오른쪽이나 아래쪽으로 완전히 벗어났는지 위치를 기준으로 판단합니다.
-        return this.x > width + 50 || this.y > height + 50;
+        // 별똥별이 화면 밖으로 완전히 벗어났는지 확인
+        return this.x > width + 50 || this.y > height + 50 || this.x < -50 || this.y < -50;
     }
 }
