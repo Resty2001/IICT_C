@@ -57,7 +57,7 @@ const texts = [
 ];
 
 class Choosing {
-  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback, newStarImage) {
+  constructor(selectedCard, keeperImages, textBox, sceneTransitionCallback, newStarImage、clickSound) {
     this.sceneTransitionCallback = sceneTransitionCallback;
     this.cardSet = null;
     this.storyText = "";
@@ -65,6 +65,8 @@ class Choosing {
     this.cardWidth = windowWidth / 9;
     this.cardHeight = this.cardWidth * 3 / 2;
     this.newStarImage = newStarImage;
+    this.clickSound = clickSound; // 클릭 사운드 저장
+    
     this.starGlowing = false;
 
     this.displayedText = "";
@@ -544,9 +546,16 @@ class Choosing {
         mouseY > card.y &&
         mouseY < card.y + card.h
       ) {
+        // ⭐ 이 부분에 클릭 사운드 재생 코드를 추가합니다. ⭐
+        if (this.clickSound && typeof this.clickSound.play === 'function') {
+          this.clickSound.play();
+        }
         this.selectedIndex = card.index;
         this.animating = true;
         this.animationStart = frameCount;
+        }
+        // ------------------------------------
+
 
         const currentBlank = this.cardSet.blanks[this.blankIndex];
         const selectedWord = currentBlank.options[card.index];
