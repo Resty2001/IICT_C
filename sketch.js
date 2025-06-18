@@ -1,7 +1,6 @@
 let currentIndex = 0;
 let storyText = "";
 let nameResult = "";
-let storyResult = "";
 let isGenerating = false;
 let choosing,connecting, backGroundImage, textBoxImage, keeperImage, newStarImage;
 let selectedWords = [];
@@ -248,21 +247,21 @@ const updateSceneToConnecting = () => {
             card.star.x = random((windowWidth * 9) / 17, (windowWidth * 29) / 30);
             card.star.y = random(windowHeight / 8, (windowHeight * 7) / 8);
         });
+        console.log("디폴트로 선택됨");
     }
     // ⭐ 추가된 안전장치 코드 끝 ⭐
 
     selectedWords = selectedCard.map(card => card.text);
     isGenerating = true;
 
-    Promise.all([createName(selectedWords), createStory(selectedWords)])
-        .then(([generatedName, generatedStory]) => {
+    Promise.all([createName(selectedWords)])
+        .then(([generatedName]) => {
             nameResult = generatedName;
-            storyResult = generatedStory;
             isGenerating = false;
-            console.log("AI 생성 완료:", nameResult, storyResult);
+            console.log("AI 생성 완료:", nameResult);
 
             connecting = new Connecting(
-                selectedCard, nameResult, storyResult, keeperImages, textBoxImage,
+                selectedCard, nameResult, keeperImages, textBoxImage,
                 () => { /* 이 콜백은 더 이상 사용되지 않습니다. */ },
                 // '별자리 완성' 버튼 클릭 시 실행될 콜백
                 async (capturedImg) => {
@@ -270,7 +269,7 @@ const updateSceneToConnecting = () => {
                     
                     // 1. 최종 카드 이미지 생성
                     const finalCardImage = constellationCardGenerator.createCardImage(
-                        introImages.taroBg, capturedImg, nameResult, storyResult
+                        introImages.taroBg, capturedImg, story, nameResult
                     );
                     
                     // 2. 카드 이미지를 Data URL로 변환
@@ -291,7 +290,8 @@ const updateSceneToConnecting = () => {
                         // 여기에 실패 시 사용자에게 보여줄 UI나 로직을 추가할 수 있습니다.
                     }
                 },
-                starImages
+                starImages,
+                newStarImage
             );
         });
 };
@@ -333,22 +333,20 @@ function draw() {
         }
     } 
     else if (sceneNumber === 3) {
-    if (isGenerating || !nameResult || !storyResult) {
+    if (isGenerating || !nameResult) {
         // 로딩 UI
-        background(0);
+        image(introImages.workshopInsideImg2, width/2, height/2, windowWidth, windowHeight);
         fill(255);
         textAlign(CENTER, CENTER);
-        textSize(24);
-        text("별자리를 생성하는 중입니다...", width / 2, height / 2);
+        textSize(windowWidth*windowHeight/70000);
+        text("별을 연결하러 가는 중...", width / 2, height / 2);
     } else {
         if (fade < 255) {
             tint(255, fade);
             image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
             noTint();
             fade += fadeSpeed;
-            connecting.set(nameResult,storyResult,selectedCard);
         } else {
-          console.log(storyResult);
           console.log(nameResult);
             image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
             connecting.update();
@@ -364,7 +362,11 @@ function draw() {
 function mouseMoved() {
     if (sceneNumber === 2 && choosing) {
         choosing.handleMouseMoved();
-    } else if (sceneNumber === 4) {
+    } else if (sceneNumber === 3 && connecting){
+        connecting.handleMouseOver();
+    }
+    
+    else if (sceneNumber === 4) {
         outroScene.handleMouseMoved();
     }
 }
@@ -386,22 +388,26 @@ function mousePressed() {
     }
   });
 }
-    else if(sceneNumber === 3){
-      connecting.handleMousePressed();
+    else if(sceneNumber === 3 && connecting){ // connecting 객체 존재 여부 확인
+        connecting.handleMousePressed();
     }else if (sceneNumber === 4) {
         outroScene.handleMousePressed();
     }
 }
 
 function mouseDragged(){
-  if(sceneNumber === 3){
-    connecting.mouseDragged();
-  }
+    // ⭐ 수정된 부분: connecting이 존재할 때만 호출 ⭐
+    if(sceneNumber === 3 && connecting){ // connecting 객체 존재 여부 확인
+        connecting.mouseDragged();
+    }
+    // ⭐ 수정된 부분 끝 ⭐
 }
 function mouseReleased(){
-  if(sceneNumber === 3){
-    connecting.mouseReleased();
-  }
+    // ⭐ 수정된 부분: connecting이 존재할 때만 호출 ⭐
+    if(sceneNumber === 3 && connecting){ // connecting 객체 존재 여부 확인
+        connecting.mouseReleased();
+    }
+    // ⭐ 수정된 부분 끝 ⭐
 }
 
 function windowResized() {
@@ -416,22 +422,22 @@ function windowResized() {
 
 async function createName() {
     const prompt = `다음 단어들의 분위기와 의미를 종합하여, 아래 12가지 별자리 이름 중 가장 잘 어울리는 하나를 선택해주세요.
-    **출력 형식은 반드시 "~자리" 로만 구성되어야 합니다. 다른 모든 문자(공백, 특수문자, 문장 부호 등)는 제외하고 순수한 별자리 이름만 출력해주세요.**
-    예시: "조각가자리", "수호자자리"
+    **다른 모든 문자(공백, 특수문자, 문장 부호 등)는 제외하고 순수한 별자리 이름만 출력해주세요.**
+    예시: "조각가", "수호자"
 
     다음 별자리 목록에서 선택:
-    조각가자리: 형태를 만들고 본질을 드러내는 예술가. 가치: 인내, 변형, 실체화
-    직조가자리: 관계와 운명의 실을 엮어 패턴을 만드는 연결자. 가치: 연결, 조화, 인연
-    대장장이자리: 강인한 의지와 열정으로 원재료를 단련시키는 변혁가. 가치: 단련, 창조, 힘
-    음유시인자리: 이야기, 노래, 시로 감정과 지혜를 전달하는 전달자. 가치: 영감, 소통, 감동
-    연금술사자리: 평범한 것을 비범한 것으로 변화시키고 깨달음을 추구하는 탐구자. 가치: 변환, 탐구, 지혜
-    정원사자리: 생명을 키우고 돌보며 성장과 결실을 기다리는 양육자. 가치: 성장, 양육, 결실
-    건축가자리: 견고하고 아름다운 구조물을 설계하고 질서와 안정을 창조하는 설계자. 가치: 구조, 안정, 비전
-    항해사자리: 미지의 세계를 탐험하고 새로운 길을 개척하는 길잡이. 가치: 탐험, 방향, 개척
-    치유사자리: 상처 입은 몸과 마음을 돌보고 회복을 돕는 조력자. 가치: 회복, 균형, 연민
-    서기관자리: 지식과 역사를 기록하고 보존하며 지혜를 전달하는 기록자. 가치: 지식, 보존, 진실
-    몽상가자리: 현실 너머의 가능성을 보고 상상력으로 새로운 세계를 그리는 영감의 원천. 가치: 상상, 영감, 가능성
-    수호자자리: 소중한 가치, 사람들, 영역을 헌신적으로 보호하고 지키는 방어자. 가치: 보호, 책임, 충성
+    조각가: 형태를 만들고 본질을 드러내는 예술가. 가치: 인내, 변형, 실체화
+    직조가: 관계와 운명의 실을 엮어 패턴을 만드는 연결자. 가치: 연결, 조화, 인연
+    대장장이: 강인한 의지와 열정으로 원재료를 단련시키는 변혁가. 가치: 단련, 창조, 힘
+    음유시인: 이야기, 노래, 시로 감정과 지혜를 전달하는 전달자. 가치: 영감, 소통, 감동
+    연금술사: 평범한 것을 비범한 것으로 변화시키고 깨달음을 추구하는 탐구자. 가치: 변환, 탐구, 지혜
+    정원사: 생명을 키우고 돌보며 성장과 결실을 기다리는 양육자. 가치: 성장, 양육, 결실
+    건축가: 견고하고 아름다운 구조물을 설계하고 질서와 안정을 창조하는 설계자. 가치: 구조, 안정, 비전
+    항해사: 미지의 세계를 탐험하고 새로운 길을 개척하는 길잡이. 가치: 탐험, 방향, 개척
+    치유사: 상처 입은 몸과 마음을 돌보고 회복을 돕는 조력자. 가치: 회복, 균형, 연민
+    서기관: 지식과 역사를 기록하고 보존하며 지혜를 전달하는 기록자. 가치: 지식, 보존, 진실
+    몽상가: 현실 너머의 가능성을 보고 상상력으로 새로운 세계를 그리는 영감의 원천. 가치: 상상, 영감, 가능성
+    수호자: 소중한 가치, 사람들, 영역을 헌신적으로 보호하고 지키는 방어자. 가치: 보호, 책임, 충성
 
     사용자 선택 단어: ${selectedWords.join(", ")}`;
 
@@ -448,68 +454,19 @@ async function createName() {
         // ⭐ 추가: AI 응답에 대해 최종 정제 ⭐
         let result = data.result;
         if (typeof result === 'string') {
-            result = result.replace(/[^가-힣a-zA-Z가-힣자리]/g, '').trim(); // 한글, 영어, '자리'만 남기고 제거
-            if (!result.endsWith("자리") && starNames.includes(result + "자리")) { // '조각가'만 왔을 경우 '조각가자리'로 완성
-                 result += "자리";
-            }
              if (result.length === 0) { // 혹시라도 빈 문자열이 될 경우 대비
-                 result = "조각가자리"; // 기본값 설정
+                 result = "조각가"; // 기본값 설정
              }
         } else {
-             result = "조각가자리"; // 응답이 string이 아닐 경우 기본값 설정
+             result = "조각가"; // 응답이 string이 아닐 경우 기본값 설정
         }
         return result;
 
     } catch (err) {
         console.error("Error creating name:", err);
-        return "조각가자리"; // 오류 발생 시 기본값 반환
+        return "조각가"; // 오류 발생 시 기본값 반환
     }
 }
-
-async function createStory() {
-    const prompt = `다음 단어들은 신화 창조를 위한 영감의 재료입니다.
-    **제시된 단어를 이야기에 절대로 포함하지 마세요.**
-    **단어들의 의미와 분위기를 직관적으로 해석한 뒤, 그 느낌에 어울리는 신화를 15단어 이내로 간결하게 창작해주세요.**
-
-    **출력 시 다음 사항을 반드시 지켜주세요:**
-    1. **양 끝에 공백을 포함하지 않습니다.**
-    2. **문장 부호는 마침표(.), 쉼표(,), 느낌표(!), 물음표(?)만 허용합니다. 이 외의 모든 특수 기호(예: *, #, @ 등)는 절대로 포함하지 않습니다.**
-    3. **단어를 그대로 나열하거나 단순히 줄거리를 요약하지 말고, 상징과 은유를 활용하여 상상력 있는 신화를 만들어주세요.**
-    4. **결과물은 반드시 단일 문자열이어야 합니다.**
-    5. **단어를 연결한 형식이 아니라 완전한 문장을 완성해주세요.**
-
-    사용자 선택 단어: ${selectedWords.join(", ")}`;
-
-    try {
-        const res = await fetch("http://localhost:3000/generate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ userText: prompt })
-        });
-
-        const data = await res.json();
-        // ⭐ 추가: AI 응답에 대해 최종 정제 ⭐
-        let result = data.result;
-        if (typeof result === 'string') {
-            // 허용된 기호(.,!?, 한글, 영어, 공백)를 제외한 모든 문자 제거
-            // 공백을 허용하여 단어 사이를 띄울 수 있게 합니다.
-            result = result.replace(/[^가-힣a-zA-Z0-9\s\.\,\!\?]/g, '').trim();
-            if (result.length === 0) { // 혹시라도 빈 문자열이 될 경우 대비
-                result = "별들의 속삭임이 새로운 운명을 엮었다."; // 기본값 설정
-            }
-        } else {
-            result = "별들의 속삭임이 새로운 운명을 엮었다."; // 응답이 string이 아닐 경우 기본값 설정
-        }
-        return result;
-
-    } catch (err) {
-        console.error("Error creating story:", err);
-        return "별들의 속삭임이 새로운 운명을 엮었다."; // 오류 발생 시 기본값 반환
-    }
-}
-
 // ⭐ 1. 이 함수를 새로 추가해주세요.
 async function uploadAndGetUrl(dataUrl) {
     try {
@@ -532,24 +489,6 @@ async function uploadAndGetUrl(dataUrl) {
         return null; // 실패 시 null 반환
     }
 }
-
-
-// async function saveCanvasAndGetUrl() { // 이 함수는 Connecting 클래스 내부에서 처리되므로 주석 처리하거나 제거 가능
-//     const dataUrl = canvas.toDataURL('image/png');
-//     try {
-//         const res = await fetch("http://localhost:3000/save-image", {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify({ imageData: dataUrl })
-//         });
-//         if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
-//         const data = await res.json();
-//         return data.imageUrl;
-//     } catch (err) {
-//         console.error("캔버스 저장 실패:", err);
-//         return null;
-//     }
-// }
 
 
 async function keyPressed() {

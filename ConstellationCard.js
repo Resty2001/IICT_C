@@ -8,7 +8,7 @@ class ConstellationCard {
 
 // ConstellationCard.js 파일의 createCardImage 함수를 아래 코드로 교체해주세요.
 
-    createCardImage(bgImage, constellationImage, name, story) {
+    createCardImage(bgImage, constellationImage, story, name) {
         let card = createGraphics(this.cardWidth, this.cardHeight);
         
         card.push();
