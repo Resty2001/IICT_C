@@ -102,6 +102,9 @@ function preload() {
     sounds.click = loadSound('assets/click.mp3');
     sounds.shootingStar = loadSound('assets/shootingStar.mp3');
 
+
+
+
 }
 
 
