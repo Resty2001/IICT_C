@@ -317,10 +317,10 @@ class Connecting{
                 mouseY >= by - bh / 2 && mouseY <= by + bh / 2) {
                 
                 // ⭐ 메인 캔버스에서 별자리 영역 (배경, starImage, 별, 선 포함)을 직접 캡처 ⭐
-                const captureX = windowWidth * 7 / 15;
-                const captureY = windowHeight;
-                const captureW = (windowWidth * 29) / 30 - (windowWidth * 9) / 17;
-                const captureH = (windowHeight * 7) / 8 - windowHeight / 8;
+                const captureX = (windowWidth * 9) / 17;
+                const captureY = windowHeight / 8;
+                const captureW = (windowWidth * 29) / 30 - captureX;
+                const captureH = (windowHeight * 7) / 8 - captureY;
 
                 // get() 함수는 p5.Image 객체를 반환합니다.
                 this.myStar = get(captureX, captureY, captureW, captureH);

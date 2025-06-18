@@ -1,7 +1,7 @@
 class OutroScene {
     constructor(images, sounds, onComplete) {
         this.images = images;
-        this.sounds = sounds; // 사운드 객체 저장
+        this.sounds = sounds;
         this.onComplete = onComplete;
 
         // --- 상수 ---
@@ -12,8 +12,8 @@ class OutroScene {
         this.FADE_DURATION = 2000;
         this.KEEPER_FADE_DURATION = 500;
 
-        // --- 상태 관리 ---
-        this.sceneState = 'INITIAL_DIALOGUE';
+        // --- ★ [수정] 상태 관리 단순화 ---
+        this.sceneState = 'MAIN_DIALOGUE'; // 시작 상태를 MAIN_DIALOGUE로 변경
         this.dialogueIndex = 0;
         this.currentCharIndex = 0;
         this.isTyping = true;
@@ -22,9 +22,7 @@ class OutroScene {
 
         // --- UI 요소 ---
         this.dialogueBoxRect = {};
-        this.yesButtonRect = {};
-        this.noButtonRect = {};
-        this.endButtonRect = {};
+        this.endButtonRect = {}; // Yes/No 버튼은 더 이상 필요 없으므로 제거
         this.keeperRect = {};
         this.arrowRect = {};
 
@@ -43,30 +41,23 @@ class OutroScene {
         this.constellationMoveSpeedX = 0;
         this.constellationMoveSpeedY = 0;
         
-        // --- 마우스 꼬리 효과 변수 (사용자 예제 기반) --- // <<< 로직 전체 변경
-        this.xpos = [];
-        this.ypos = [];
-        this.TAIL_LENGTH = 50; // 꼬리 길이 (사용자 예제의 num)
+        // --- 마우스 꼬리 효과 변수 ---
+        this.lightParticles = [];
+        this.PARTICLE_LIFESPAN = 60; // 파티클 수명 (프레임)
+        this.PARTICLE_INITIAL_SIZE = 8; // 파티클 초기 크기
 
         this.finalConstellationImage = null;
-
         this.qrCodeDownloadUrl = null;
         this.generatedQRImage = null;
 
-        // --- 대화 내용 ---
-        this.initialDialogues = [
+        // --- ★ [수정] 새로운 통합 대화 내용 ---
+        this.mainDialogue = [
             { speaker: "나", text: "와... 이게 바로... 저의 별자리군요." },
             { speaker: "공방지기", text: "그렇습니다. 사람들이 밤하늘을 올려다볼 때마다, 그들은 당신의 빛나는 이야기를 기억하고, 또 위로받게 될 거예요.", image: 'keeper_smile2' },
-            { speaker: "나", text: "아..." },
-            { speaker: "공방지기", text: "당신의 별자리는 이제 영원히 저 하늘에 빛나겠지만... 그 기억을 당신의 영혼에도 깊이 새기고 싶지 않으신가요?", image: 'keeper_talk2' },
-            { speaker: "공방지기", text: "원하신다면, 이 별자리를 당신의 마음에 간직할 수 있도록 도와드리겠습니다.", image: 'keeper_talk2' }
-        ];
-        this.qrDialogue = { speaker: "공방지기", text: "이제 당신의 이야기는 당신의 영혼 속에,\n그리고 저 밤하늘에 영원히 함께할 것입니다.", image: 'keeper_smile1' };
-        this.noDialogue = { speaker: "공방지기", text: "때로는 그저 밤하늘을 올려다보는 것으로 충분한 분들도 계시지요.", image: 'keeper_talk3' };
-        this.endingMonologue = [
-            { speaker: "공방지기", text: "이제 이곳에서의 당신의 역할은 끝났습니다." },
-            { speaker: "공방지기", text: "당신의 별자리는 밤하늘에서 제 몫을 다할 것이고, 당신은 이제 새로운 여정을 떠나야 합니다." },
-            { speaker: "공방지기", text: "부디 평안하세요." }
+            { speaker: "나", text: "아… 이렇게라도 모두와 이어져 있게 해주셔서, 정말 감사합니다." },
+            { speaker: "공방지기", text: "이제 이곳에서의 당신의 역할은 끝났습니다.", image: 'keeper_talk2' },
+            { speaker: "공방지기", text: "당신의 별자리는 밤하늘에서 제 몫을 다할 것이고, 당신은 이제 새로운 여정을 떠나야 합니다.", image: 'keeper_talk2' },
+            { speaker: "공방지기", text: "부디 평안하세요.", image: 'keeper_smile1' }
         ];
 
         this.setup();
@@ -76,35 +67,46 @@ class OutroScene {
         this.finalConstellationImage = img;
     }
     
-setQRCodeUrl(url) {
-    this.qrCodeDownloadUrl = url;
-    this.generateQRCode();
-}
+    setQRCodeUrl(url) {
+        this.qrCodeDownloadUrl = url;
+        this.generateQRCode();
+    }
 
+// ⭐ 2. 이 함수 전체를 교체해주세요.
 generateQRCode() {
-    if (!this.qrCodeDownloadUrl) return;
+    console.log("[QR 생성 시작]");
+    if (!this.qrCodeDownloadUrl) {
+        console.error("QR 생성을 위한 URL이 없습니다.");
+        return;
+    }
+    // 이제 URL이 짧아졌으므로 길이는 문제가 되지 않습니다.
+    console.log("QR에 인코딩될 URL:", this.qrCodeDownloadUrl);
+
     try {
-        const typeNumber = 4;
+        const typeNumber = 4; // 짧은 URL이므로 type 4면 충분합니다.
         const errorCorrectionLevel = 'L';
         const qr = qrcode(typeNumber, errorCorrectionLevel);
+        
         qr.addData(this.qrCodeDownloadUrl);
         qr.make();
+        
         const qrDataUrl = qr.createDataURL(5, 5);
+        console.log("QR 코드 데이터 URL 생성 성공. 이미지 로드를 시작합니다.");
 
-        loadImage(qrDataUrl,
-            img => {
-                this.generatedQRImage = img;
-            },
-            err => {
-                console.error("QR 이미지 로딩 실패:", err);
-                this.generatedQRImage = null; // 또는 fallback 이미지 사용
+        loadImage(
+            qrDataUrl, 
+            img => { 
+                this.generatedQRImage = img; 
+                console.log("QR 이미지 로딩 성공!", img);
+            }, 
+            err => { 
+                console.error("QR 이미지 로딩 실패:", err); 
             }
         );
     } catch (err) {
-        console.error("QR 코드 생성 실패:", err);
+        console.error("QR 코드 생성 중 오류 발생:", err);
     }
 }
-
 
     setup() {
         this.setupUIElements();
@@ -113,7 +115,7 @@ generateQRCode() {
         this.generateConstellations();
         this.generateGeneralStars();
         
-        const firstKeeperDialogue = this.initialDialogues.find(d => d.image);
+        const firstKeeperDialogue = this.mainDialogue.find(d => d.image);
         if (firstKeeperDialogue) {
             this.currentKeeperImg = this.images[firstKeeperDialogue.image];
             this.lastKeeperImgKey = firstKeeperDialogue.image;
@@ -121,32 +123,38 @@ generateQRCode() {
         this.lastCharTime = millis();
     }
 
-    // <<< 마우스 꼬리 초기화 함수 추가
-    initMouseTrail() {
-        for (let i = 0; i < this.TAIL_LENGTH; i++) {
-            this.xpos[i] = -999; // 화면 밖에 위치시켜 시작 시 보이지 않게 함
-            this.ypos[i] = -999;
+     reset() {
+        this.sceneState = 'MAIN_DIALOGUE';
+        this.dialogueIndex = 0;
+        this.currentCharIndex = 0;
+        this.isTyping = true;
+        this.lastCharTime = millis();
+        this.fadeStartTime = 0;
+        
+        // 이미지 및 URL 정보도 깨끗하게 초기화
+        this.finalConstellationImage = null;
+        this.generatedQRImage = null;
+        this.qrCodeDownloadUrl = null;
+
+        // 공방지기 이미지도 첫 번째 상태로 초기화
+        const firstKeeperDialogue = this.mainDialogue.find(d => d.image);
+        if (firstKeeperDialogue) {
+            this.currentKeeperImg = this.images[firstKeeperDialogue.image];
+            this.lastKeeperImgKey = firstKeeperDialogue.image;
+            this.previousKeeperImg = null;
         }
+        this.setupUIElements();
+        console.log("OutroScene 상태가 초기화되었습니다.");
     }
 
-setupUIElements() {
+    setupUIElements() {
         let scaleX = width / this.ORIGINAL_WIDTH, scaleY = height / this.ORIGINAL_HEIGHT, avgScale = (scaleX + scaleY) / 2;
-        this.keeperRect = { x: width / 2, y: height*5 / 11 + (150 * scaleY), w: 600 * scaleX, h: 900 * scaleX };
+        this.keeperRect = { x: width / 2, y: height * 5 / 11 + (150 * scaleY), w: 600 * scaleX, h: 900 * scaleX };
         this.dialogueBoxRect = { x: 50 * scaleX, y: height - 330 * scaleY, w: width - (100 * scaleX), h: 300 * scaleY };
-
-        // --- ▼ [수정 1] '좋아요' / '괜찮습니다' 버튼 크기 조절 (클릭 범위 축소) ▼ ---
-        let buttonW = 300 * scaleX * 0.85; // 너비를 85%로 줄임
-        let buttonH = 100 * scaleY * 0.8;  // 높이를 80%로 줄임
-        let buttonY = this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2 - buttonH / 2;
-        let buttonGap = 50 * scaleX;
-
-        this.yesButtonRect = { x: width / 2 - buttonW - buttonGap, y: buttonY, w: buttonW, h: buttonH };
-        this.noButtonRect = { x: width / 2 + buttonGap, y: buttonY, w: buttonW, h: buttonH };
-
-        // --- ▼ [수정 2] '종료하기' 버튼 크기 조절 (클릭 범위 축소) ▼ ---
-        let endButtonW = 220 * scaleX * 0.9; // 너비를 90%로 줄임
-        let endButtonH = 80 * scaleY * 0.85; // 높이를 85%로 줄임
-
+        
+        // --- ★ [수정] 종료 버튼만 설정 ---
+        let endButtonW = 220 * scaleX * 0.9;
+        let endButtonH = 80 * scaleY * 0.85;
         this.endButtonRect = { x: width / 2 - (endButtonW / 2), y: height - (150 * scaleY), w: endButtonW, h: endButtonH };
         
         let arrowSize = 40 * avgScale;
@@ -163,24 +171,22 @@ setupUIElements() {
 
         isFinalScene ? this.drawNightSkyBackground() : this.drawWorkshopBackground();
 
-        // <<< 여기서 마우스 꼬리를 그림
         if (isFinalScene) {
-            //this.updateAndDrawMouseTrail();
+            this.updateAndDrawLightTrail();
         }
 
+        // --- ★ [수정] switch 문 단순화 ---
         switch (this.sceneState) {
-            case 'INITIAL_DIALOGUE': this.drawDialogueScene(this.initialDialogues, true); break;
-            case 'CHOICE':
-                this.drawKeeperImage();
-                this.drawDialogueBoxBackground();
-                this.drawChoiceButtons();
+            case 'MAIN_DIALOGUE':
+                this.drawDialogueScene(this.mainDialogue, true);
                 break;
-            case 'QR_CODE_PATH': this.drawQRCodeScene(); break;
-            case 'NO_THANKS_PATH': this.drawDialogueScene([this.noDialogue], true); break;
-            case 'ENDING_MONOLOGUE': this.drawDialogueScene(this.endingMonologue, true); break;
-            case 'FADING_TO_WHITE': this.drawFadeToWhite(); break;
+            case 'FADING_TO_WHITE':
+                this.drawFadeToWhite();
+                break;
             case 'FINAL_SCREEN':
-            case 'FADING_OUT_TO_WHITE': this.drawFinalScreen(); break;
+            case 'FADING_OUT_TO_WHITE':
+                this.drawFinalScreen();
+                break;
         }
         
         if (this.sceneState === 'FINAL_SCREEN') {
@@ -188,102 +194,47 @@ setupUIElements() {
             if (progress < 1) {
                 fill(255, lerp(255, 0, progress)); noStroke(); rectMode(CORNER); rect(0, 0, width, height);
             }
-        } 
-        else if (this.sceneState === 'FADING_OUT_TO_WHITE') {
+        } else if (this.sceneState === 'FADING_OUT_TO_WHITE') {
             this.drawFadeOverlay(true);
         }
     }
 
     handleMousePressed() {
         if (this.isTyping) { this.currentCharIndex = 999; this.isTyping = false; return; }
+        
+        // --- ★ [수정] 마우스 클릭 로직 단순화 ---
         switch (this.sceneState) {
-            case 'INITIAL_DIALOGUE': this.advanceDialogue(this.initialDialogues, 'CHOICE'); break;
-            case 'CHOICE':
-                let choiceMade = false;
-                if (this.isMouseOver(this.yesButtonRect)) {
-                    this.sceneState = 'QR_CODE_PATH';
-                    this.resetTyping(this.qrDialogue);
-                    choiceMade = true;
-                } 
-                else if (this.isMouseOver(this.noButtonRect)) {
-                    this.sceneState = 'NO_THANKS_PATH';
-                    this.resetTyping(this.noDialogue);
-                    choiceMade = true;
-                }
-
-                // ▼ 버튼이 눌렸고 'smallLaugh' 사운드가 있으면 재생합니다. (대소문자 수정) ▼
-                if (choiceMade && this.sounds.smallLaugh) {
-                    this.sounds.smallLaugh.play();
-                }
+            case 'MAIN_DIALOGUE':
+                this.advanceDialogue(this.mainDialogue, 'FADING_TO_WHITE');
                 break;
-            case 'QR_CODE_PATH':
-            case 'NO_THANKS_PATH':
-                this.sceneState = 'ENDING_MONOLOGUE'; this.resetTyping(this.endingMonologue[0]); break;
-            case 'ENDING_MONOLOGUE': this.advanceDialogue(this.endingMonologue, 'FADING_TO_WHITE'); break;
             case 'FINAL_SCREEN':
-                if (this.isMouseOver(this.endButtonRect)) { this.sceneState = 'FADING_OUT_TO_WHITE'; this.fadeStartTime = millis(); }
+                if (this.isMouseOver(this.endButtonRect)) {
+                    this.sceneState = 'FADING_OUT_TO_WHITE';
+                    this.fadeStartTime = millis();
+                }
                 break;
         }
     }
 
-    // <<< 사용자 예제 코드를 클래스 함수로 변환
-    updateAndDrawMouseTrail() {
-        // 1. 배열의 위치를 한 칸씩 뒤로 민다.
-        for (let i = 0; i < this.TAIL_LENGTH - 1; i++) {
-            this.xpos[i] = this.xpos[i + 1];
-            this.ypos[i] = this.ypos[i + 1];
-        }
+    drawFadeOverlay(isFadingOut) {
+        let progress = constrain((millis() - this.fadeStartTime) / this.FADE_DURATION, 0, 1);
+        let alpha = lerp(0, 255, progress);
+        fill(255, alpha); noStroke(); rectMode(CORNER); rect(0, 0, width, height);
 
-        // 2. 배열의 마지막에 현재 마우스 위치를 추가한다.
-        this.xpos[this.TAIL_LENGTH - 1] = mouseX;
-        this.ypos[this.TAIL_LENGTH - 1] = mouseY;
-
-        // 3. 배열에 저장된 위치에 원을 그린다.
-        noStroke();
-        for (let i = 0; i < this.TAIL_LENGTH; i++) {
-            // i가 0에 가까울수록(오래된 위치) 더 투명하고 커짐
-            // i가 끝에 가까울수록(최신 위치) 더 불투명하고 작아짐
-            let alpha = map(i, 0, this.TAIL_LENGTH, 0, 200); // 투명도 조절
-            let size = map(i, 0, this.TAIL_LENGTH, this.TAIL_LENGTH, 2); // 크기 조절
-            
-            fill(255, alpha);
-            ellipse(this.xpos[i], this.ypos[i], size, size);
+        if (progress >= 1) {
+            if (isFadingOut) {
+                this.onComplete();
+            } else { 
+                if (this.sounds.bgm3 && this.sounds.bgm3.isPlaying()) this.sounds.bgm3.stop();
+                if (this.sounds.bgm4 && !this.sounds.bgm4.isPlaying()) this.sounds.bgm4.loop();
+                
+                this.sceneState = 'FINAL_SCREEN'; 
+                this.fadeStartTime = millis();
+                this.lightParticles = [];
+            }
         }
     }
-    
- drawFadeOverlay(isFadingOut) {
-    let progress = constrain((millis() - this.fadeStartTime) / this.FADE_DURATION, 0, 1);
-    let alpha = lerp(0, 255, progress);
-    fill(255, alpha);
-    noStroke();
-    rectMode(CORNER);
-    rect(0, 0, width, height);
 
-    // 페이드 인/아웃이 완료되었을 때
-    if (progress >= 1) {
-        if (isFadingOut) {
-            // '종료하기'를 눌러서 페이드 아웃될 때
-            this.onComplete();
-        } else { 
-            // FINAL_SCREEN으로 페이드 인될 때
-            
-            // --- ★ 여기가 누락된 핵심 로직입니다 ★ ---
-            // BGM3을 멈춥니다.
-            if (this.sounds.bgm3 && this.sounds.bgm3.isPlaying()) {
-                this.sounds.bgm3.stop();
-            }
-            // BGM4를 반복 재생합니다.
-            if (this.sounds.bgm4 && !this.sounds.bgm4.isPlaying()) {
-                this.sounds.bgm4.loop();
-            }
-            // --- 로직 추가 끝 ---
-
-            this.sceneState = 'FINAL_SCREEN'; 
-            this.fadeStartTime = millis();
-            this.initMouseTrail();
-        }
-    }
-}
     // --- 그리기 헬퍼 함수들 ---
 
     drawWorkshopBackground() {
@@ -321,177 +272,131 @@ setupUIElements() {
         if (drawKeeper) this.drawKeeperImage();
         this.drawDialogueBox(dialogues[this.dialogueIndex]);
     }
-    
-    drawChoiceButtons() {
-        let scaleX = width / this.ORIGINAL_WIDTH, textSizeVal = 32 * scaleX;
-        textAlign(CENTER, CENTER);
-        
-        push();
-        tint(255, this.isMouseOver(this.yesButtonRect) ? 255 : 220);
-        image(this.images.buttonBg, this.yesButtonRect.x + this.yesButtonRect.w / 2, this.yesButtonRect.y + this.yesButtonRect.h / 2, this.yesButtonRect.w, this.yesButtonRect.h);
-        pop();
-        fill(255); noStroke(); textSize(textSizeVal);
-        text("좋아요", this.yesButtonRect.x + this.yesButtonRect.w / 2, this.yesButtonRect.y + this.yesButtonRect.h / 2);
 
-        push();
-        tint(255, this.isMouseOver(this.noButtonRect) ? 255 : 220);
-        image(this.images.buttonBg, this.noButtonRect.x + this.noButtonRect.w / 2, this.noButtonRect.y + this.noButtonRect.h / 2, this.noButtonRect.w, this.noButtonRect.h);
-        pop();
-        fill(255); noStroke(); textSize(textSizeVal);
-        text("괜찮습니다", this.noButtonRect.x + this.noButtonRect.w / 2, this.noButtonRect.y + this.noButtonRect.h / 2);
-        
-        textAlign(LEFT, TOP);
-    }
-    
-drawQRCodeScene() {
-        this.drawKeeperImage();
-        fill(0, 180); noStroke(); rectMode(CORNER); rect(0, 0, width, height);
-
-        let scaleX = width / this.ORIGINAL_WIDTH, scaleY = height / this.ORIGINAL_HEIGHT;
-        let popupW = 800 * scaleX, popupH = 900 * scaleY;
-        let popupX = width / 2 - popupW / 2, popupY = height / 2 - popupH / 2;
-        
-        // 팝업창 배경 그리기
-        fill(20, 20, 30, 240); stroke(255, 100); strokeWeight(2);
-        rect(popupX, popupY, popupW, popupH, 20);
-
-        // QR 코드 영역 그리기
-        let qrSize = 400 * Math.min(scaleX, scaleY);
-        let qrCenterX = width / 2;
-        let qrCenterY = popupY + popupH / 2 - 120 * scaleY;
-
-        if (this.generatedQRImage) {
-            // QR 이미지가 생성되면 그걸 보여줍니다.
-            image(this.generatedQRImage, qrCenterX, qrCenterY, qrSize, qrSize);
-        } else {
-            // --- ▼ [수정 2] "QR 코드 생성 중" 문구 복구 ▼ ---
-            // QR 이미지가 아직 없으면, 임시 이미지와 안내 문구를 함께 보여줍니다.
-            image(this.images.qrCode, qrCenterX, qrCenterY, qrSize, qrSize);
-            
-            fill(255);
-            textAlign(CENTER, CENTER);
-            // 안내 문구를 위한 작은 텍스트 크기를 별도로 설정합니다.
-            textSize(16 * Math.min(scaleX, scaleY)); 
-            text("QR 코드 생성 중...", qrCenterX, qrCenterY);
-        }
-
-        // --- ▼ [수정 1] 메인 텍스트 중앙 정렬 및 줄 간격 수정 ▼ ---
-        // 텍스트 정렬을 가로/세로 모두 중앙으로 설정합니다.
-        textAlign(CENTER, CENTER); 
-        noStroke();
-        fill(255);
-        
-        let dialogueTextSize = 32 * Math.min(scaleX, scaleY);
-        textSize(dialogueTextSize);
-        textLeading(dialogueTextSize * 1.5);
-        
-        // 텍스트의 y 위치를 재조정하고, 너비 제한 없이 그립니다.
-        // textAlign(CENTER, CENTER)가 각 줄을 알아서 중앙에 배치해 줍니다.
-        text(this.qrDialogue.text, width / 2, popupY + popupH * 0.75);
-        
-        
-        // '계속하기' 안내 문구
-        let continueTextSize = 24 * Math.min(scaleX, scaleY);
-        textSize(continueTextSize);
-        textLeading(continueTextSize);
-        
-        fill(255, 150 + sin(millis() * 0.005) * 105);
-        text("화면을 클릭하여 계속하기", width/2, popupY + popupH - 60 * scaleY);
-        
-        // 다음 프레임에 영향을 주지 않도록 텍스트 정렬을 기본값으로 되돌립니다.
-        textAlign(LEFT, TOP);
-    }
-    
     drawFadeToWhite() {
         this.drawWorkshopBackground();
         this.drawKeeperImage(); 
-        this.drawDialogueBox(this.endingMonologue[this.endingMonologue.length - 1]);
+        // 마지막 대사로 고정
+        this.drawDialogueBox(this.mainDialogue[this.mainDialogue.length - 1]);
         this.drawFadeOverlay(false);
     }
     
-    drawFadeOverlay(isFadingOut) {
-        let progress = constrain((millis() - this.fadeStartTime) / this.FADE_DURATION, 0, 1);
-        let alpha = lerp(0, 255, progress);
-        fill(255, alpha); noStroke(); rectMode(CORNER); rect(0, 0, width, height);
-        if (progress >= 1) {
-            if (isFadingOut) this.onComplete();
-            else { 
-                this.sceneState = 'FINAL_SCREEN'; 
-                this.fadeStartTime = millis();
-                this.lightParticles = []; // <<< 파티클 배열 초기화
+    // --- ★ [전면 수정] 마지막 화면 그리기 함수 ---
+    drawFinalScreen() {
+    let elapsedTime = millis() - this.fadeStartTime;
+    imageMode(CENTER);
+
+    // --- 1. 왼쪽 중앙에 별자리 카드(스크린샷) 그리기 ---
+    if (this.finalConstellationImage) {
+        const cardFadeInStart = 1000;
+        const cardFadeInDuration = 2000;
+        let cardAlpha = 0;
+        if (elapsedTime > cardFadeInStart) {
+            cardAlpha = lerp(0, 255, constrain((elapsedTime - cardFadeInStart) / cardFadeInDuration, 0, 1));
+        }
+
+        if (cardAlpha > 0) {
+            // --- [수정된 부분] 카드 크기 계산 로직 ---
+            const availableWidth = width * 0.4;
+            const availableHeight = height * 0.8;
+            const cardAspectRatio = this.finalConstellationImage.width / this.finalConstellationImage.height;
+            
+            let cardW = availableWidth;
+            let cardH = cardW / cardAspectRatio;
+
+            if (cardH > availableHeight) {
+                cardH = availableHeight;
+                cardW = cardH * cardAspectRatio;
+            }
+            // --- 여기까지가 수정된 부분 ---
+
+            let cardX = width / 4;
+            let cardY = height / 2;
+
+            tint(255, cardAlpha);
+            image(this.finalConstellationImage, cardX, cardY, cardW, cardH);
+            noTint();
+        }
+    }
+    
+    // --- 2. 오른쪽 중앙에 QR 코드 그리기 ---
+    if (this.generatedQRImage) {
+        const qrFadeInStart = 1500;
+        const qrFadeInDuration = 2000;
+        let qrAlpha = 0;
+        if (elapsedTime > qrFadeInStart) {
+            qrAlpha = lerp(0, 255, constrain((elapsedTime - qrFadeInStart) / qrFadeInDuration, 0, 1));
+        }
+        
+        if (qrAlpha > 0) {
+            let qrSize = min(width / 5, height / 3);
+            let qrX = width * 3 / 4;
+            let qrY = height / 2;
+
+            tint(255, qrAlpha);
+            image(this.generatedQRImage, qrX, qrY, qrSize, qrSize);
+            noTint();
+        }
+    }
+
+    // --- 3. 하단에 종료 버튼 그리기 ---
+    const buttonDelay = 4000;
+    const buttonFadeDuration = 1500;
+    let buttonAlpha = 0;
+    if (elapsedTime > buttonDelay) {
+        buttonAlpha = lerp(0, 255, constrain((elapsedTime - buttonDelay) / buttonFadeDuration, 0, 1));
+    }
+    
+    if (buttonAlpha > 0) {
+        let scale = width / this.ORIGINAL_WIDTH;
+        let textSizeVal = 32 * scale;
+        let isHovering = this.isMouseOver(this.endButtonRect);
+        let imageTint = isHovering ? buttonAlpha : buttonAlpha * 0.85; 
+        let textBrightness = isHovering ? 255 : 220;
+        
+        push();
+        tint(255, imageTint);
+        image(this.images.buttonBg, this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2, this.endButtonRect.w, this.endButtonRect.h);
+        pop();
+
+        fill(textBrightness, buttonAlpha);
+        noStroke();
+        textAlign(CENTER, CENTER);
+        textSize(textSizeVal);
+        text("종료하기", this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2);
+        textAlign(LEFT, TOP);
+    }
+    rectMode(CORNER);
+}
+    
+    // --- ★ [수정] 부유하는 별자리 제거 ---
+    drawMovingSkyElements() {
+        push();
+        translate(this.skyOffsetX, this.skyOffsetY);
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                push();
+                translate(i * width, j * height);
+                this.drawGeneralStarsSet();
+                this.drawConstellationSet();
+                pop();
             }
         }
+        // 아래 if문에서 drawFinalConstellation() 호출을 제거했습니다.
+        pop();
     }
 
-    drawFinalConstellation() {
-        
-        const img = this.finalConstellationImage || this.images.finalConstellationTest;
-        if (!img) return;
-        let scale = width / this.ORIGINAL_WIDTH, elapsedTime = millis() - this.fadeStartTime;
-        let imgWidth = width / 4, imgHeight = imgWidth * (img.height / img.width);
-        let imgX = width / 2, imgY = height / 3;
-        
-        let fadeInProgress = constrain(elapsedTime / 1500, 0, 1);
-        let floatingY = sin(millis() * 0.0005) * 15 * scale;
-        let glow = map(sin(millis() * 0.0008), -1, 1, 180, 255);
-        let twinkleSize = 1 + sin(millis() * 0.003) * 0.02;
-        
-        tint(255, glow * fadeInProgress);
-        image(img, imgX, imgY + floatingY, imgWidth * twinkleSize, imgHeight * twinkleSize);
-        noTint();
-    }
-
-drawFinalScreen() {
-        let elapsedTime = millis() - this.fadeStartTime;
-        let scale = width / this.ORIGINAL_WIDTH;
-        const buttonDelay = 5000, buttonFadeDuration = 1500;
-        let buttonAlpha = 0;
-
-        if (elapsedTime > buttonDelay) {
-            buttonAlpha = lerp(0, 255, constrain((elapsedTime - buttonDelay) / buttonFadeDuration, 0, 1));
-        }
-        
-        if (buttonAlpha > 0) {
-            let textSizeVal = 32 * scale;
-            let isHovering = this.isMouseOver(this.endButtonRect);
-            
-            // 버튼 이미지의 투명도를 설정합니다. (마우스오버 효과 포함)
-            let imageTint = isHovering ? buttonAlpha : buttonAlpha * 0.85; 
-            
-            // --- ▼ [수정] 텍스트 색상과 투명도를 분리하여 제어합니다. ▼ ---
-            // 마우스오버에 따라 텍스트의 '밝기'만 결정합니다.
-            let textBrightness = isHovering ? 255 : 220;
-            
-            // 1. 버튼 배경 이미지를 그립니다.
-            push();
-            tint(255, imageTint);
-            image(this.images.buttonBg, this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2, this.endButtonRect.w, this.endButtonRect.h);
-            pop();
-
-            // 2. 텍스트를 그립니다.
-            // 위에서 계산한 밝기와, 배경과 동일한 'buttonAlpha' 투명도 값을 함께 적용합니다.
-            fill(textBrightness, buttonAlpha);
-            noStroke();
-            textAlign(CENTER, CENTER);
-            textSize(textSizeVal);
-            text("종료하기", this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2);
-            textAlign(LEFT, TOP);
-        }
-    }
 
     advanceDialogue(dialogues, nextState) {
         this.dialogueIndex++;
         if (this.dialogueIndex >= dialogues.length) {
             this.sceneState = nextState;
-            this.dialogueIndex = 0;
+            this.dialogueIndex = 0; // 혹시 모르니 초기화
             this.fadeStartTime = millis();
             this.resetTyping(null);
-                       if (nextState === 'FADING_TO_WHITE') {
-                if (this.sounds.transition) {
-                    this.sounds.transition.play();
-                }
+            if (nextState === 'FADING_TO_WHITE' && this.sounds.transition) {
+                this.sounds.transition.play();
             }
-
         } else {
             this.resetTyping(dialogues[this.dialogueIndex]);
         }
@@ -543,47 +448,25 @@ drawFinalScreen() {
         }
     }
 
-    // --- 빛의 꼬리 효과 함수 --- // <<< 로직 전체 변경
     updateAndDrawLightTrail() {
-        // 1. 매 프레임 마우스 위치에 새로운 파티클 생성
-        // 꼬리를 더 풍성하게 하려면 for 반복 횟수를 늘리세요 (예: for (let i = 0; i < 3; i++))
-        for (let i = 0; i < 2; i++) {
-            let p = {
-                x: mouseX + random(-10, 10), // 약간의 무작위성을 줘서 더 자연스럽게
-                y: mouseY + random(-10, 10),
-                vx: random(-0.5, 0.5), // 약간 퍼져나가는 효과
-                vy: random(-0.5, 0.5),
-                life: this.PARTICLE_LIFESPAN,
-                initialLife: this.PARTICLE_LIFESPAN,
-            };
-            this.lightParticles.push(p);
+        if (dist(mouseX, mouseY, pmouseX, pmouseY) > 1) {
+            for (let i = 0; i < 2; i++) {
+                this.lightParticles.push({
+                    x: mouseX + random(-10, 10), y: mouseY + random(-10, 10),
+                    vx: random(-0.5, 0.5), vy: random(-0.5, 0.5),
+                    life: this.PARTICLE_LIFESPAN, initialLife: this.PARTICLE_LIFESPAN,
+                });
+            }
         }
 
-        // 2. 모든 파티클 업데이트 및 그리기
-        // 배열을 뒤에서부터 순회해야 삭제 시에도 인덱스 문제가 발생하지 않습니다.
         noStroke();
         for (let i = this.lightParticles.length - 1; i >= 0; i--) {
             let p = this.lightParticles[i];
-
-            // 수명 감소 및 위치 업데이트
-            p.life--;
-            p.x += p.vx;
-            p.y += p.vy;
-
-            // 수명이 다하면 배열에서 제거
-            if (p.life <= 0) {
-                this.lightParticles.splice(i, 1);
-                continue; // 다음 파티클로 넘어감
-            }
-
-            // 남은 수명 비율 (1.0 -> 0.0)
+            p.life--; p.x += p.vx; p.y += p.vy;
+            if (p.life <= 0) { this.lightParticles.splice(i, 1); continue; }
             let lifeRatio = p.life / p.initialLife;
-
-            // 수명 비율에 따라 크기와 투명도 계산
             let currentSize = this.PARTICLE_INITIAL_SIZE * lifeRatio;
             let currentAlpha = 255 * lifeRatio;
-
-            // 파티클 그리기
             fill(255, currentAlpha);
             ellipse(p.x, p.y, currentSize, currentSize);
         }
@@ -604,23 +487,6 @@ drawFinalScreen() {
         this.skyOffsetX=(this.skyOffsetX+this.constellationMoveSpeedX+width)%width;
         this.skyOffsetY=(this.skyOffsetY+this.constellationMoveSpeedY+height)%height;
     }
-    drawMovingSkyElements() {
-        push();
-        translate(this.skyOffsetX, this.skyOffsetY);
-        for (let i = -1; i <= 1; i++) {
-            for (let j = -1; j <= 1; j++) {
-                push();
-                translate(i * width, j * height);
-                this.drawGeneralStarsSet();
-                this.drawConstellationSet();
-                pop();
-            }
-        }
-        if (this.sceneState === 'FINAL_SCREEN' || this.sceneState === 'FADING_OUT_TO_WHITE') {
-            this.drawFinalConstellation();
-        }
-        pop();
-    }
     drawGeneralStarsSet() {
         noStroke();
         for (let s of this.generalStars) { fill(255, s.alpha); ellipse(s.x, s.y, s.size, s.size); }
@@ -637,4 +503,9 @@ drawFinalScreen() {
             }
         }
     }
+    // ⭐ 3. 클래스 맨 마지막에 이 함수를 추가해주세요.
+    handleMouseMoved() {
+        // 현재는 마우스 움직임에 반응할 기능이 없으므로 비워둡니다.
+    }
 }
+
