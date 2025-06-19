@@ -110,7 +110,7 @@ function preload() {
 
     sounds.cardFlip = loadSound('assets/cardFlip.mp3');
     sounds.cardFly = loadSound('assets/shootingStar.mp3');
-     sounds.footsteps = loadSound('assets/footsteps.mp3'); // 발자국 소리 로드
+     sounds.footsteps = loadSound('assets/footSteps.mp3'); // 발자국 소리 로드
      sounds.switchingBgm = loadSound('assets/switchingBgm.mp3');
     
 
