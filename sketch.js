@@ -130,7 +130,7 @@ function setup() {
         }
         sceneNumber = 2;
         currentIndex = 0;
-        selectedCard = []; // 씬 전환 시 selectedCrad 초기화
+        selectedCard.length = 0; // 씬 전환 시 selectedCrad 초기화
         choosing.set(cardSets[currentIndex], cardBackImages);
         fade = 0;
     };
