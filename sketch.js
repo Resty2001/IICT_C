@@ -26,8 +26,10 @@ let bgmExample1, doorOpenSound, bgmExample2;
 let bgmExample3, bgmExample4, transitionSound;
 let auraHumSound;
 
+
 let fontHSBombaram, fontOgR; // 글꼴을 저장할 변수
 let isCardDesignTestMode = true;
+let loadingStartTime = 0; // 로딩 화면 시작 시간을 기록할 변수
 
 // ⭐ 추가: 별자리 이미지와 URL을 저장할 외부 변수 ⭐
 let capturedConstellationImage = null; // p5.Graphics 객체 또는 p5.Image 객체가 저장될 변수
@@ -101,6 +103,11 @@ function preload() {
     sounds.smallLaugh = loadSound('assets/smallLaugh.mp3'); 
     sounds.click = loadSound('assets/click.mp3');
     sounds.shootingStar = loadSound('assets/shootingStar.mp3');
+
+    sounds.cardFlip = loadSound('assets/cardFlip.mp3');
+    sounds.cardFly = loadSound('assets/shootingStar.mp3');
+     sounds.footsteps = loadSound('assets/footsteps.mp3'); // 발자국 소리 로드
+    
 
     sounds.bgm_1 = loadSound('assets/BGM_1.mp3'); // 공방 내부 BGM
     sounds.hero = loadSound('assets/hero.1.mp3');
@@ -266,7 +273,9 @@ const updateSceneToConnecting = () => {
     // ⭐ 추가된 안전장치 코드 끝 ⭐
 
     selectedWords = selectedCard.map(card => card.text);
-    isGenerating = true;
+    isGenerating = true; // "생성 중" 상태 시작
+    loadingStartTime = millis(); // 로딩 시작 시간 기록
+    sounds.footsteps.loop(); // 발자국 소리 반복 재생 시작
 
     Promise.all([createName(selectedWords)])
         .then(([generatedName]) => {
@@ -333,7 +342,7 @@ const updateSceneToConnecting = () => {
     keeperImages.push(keeperImage);
     keeperImages.push(keeperImage);
     textBoxImage = introImages.textBox;
-    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage);
+    choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage, sounds);
 
     let set = cardSets[currentIndex];
     choosing.set(set, cardBackImages);
@@ -358,27 +367,75 @@ function draw() {
         }
     } 
     else if (sceneNumber === 3) {
-    if (isGenerating || !nameResult) {
-        // 로딩 UI
-        image(introImages.workshopInsideImg2, width/2, height/2, windowWidth, windowHeight);
-        fill(255);
-        textAlign(CENTER, CENTER);
-        textSize(windowWidth*windowHeight/70000);
-        text("별을 연결하러 가는 중...", width / 2, height / 2);
-    } else {
-        if (fade < 255) {
-            tint(255, fade);
-            image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
-            noTint();
-            fade += fadeSpeed;
+        const elapsedTime = millis() - loadingStartTime;
+        const minLoadingTime = 3000; // 최소 로딩 시간 (3초)
+
+        // 로딩 화면 표시 조건: AI가 생성 중이거나, 또는 최소 로딩 시간이 아직 지나지 않았을 경우
+        if (isGenerating || elapsedTime < minLoadingTime) {
+            // 로딩 UI 그리기
+            image(introImages.workshopInsideImg2, width/2, height/2, windowWidth, windowHeight);
+            fill(255);
+            textAlign(CENTER, CENTER);
+            textSize(windowWidth*windowHeight/70000);
+            text("별을 연결하러 가는 중...", width / 2, height / 2);
         } else {
-          console.log(nameResult);
-            image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
-            connecting.update();
-            connecting.show();
+            // 로딩이 끝나고 최소 시간도 지났을 때 실행되는 부분
+            
+            // 발자국 소리가 재생 중이면 정지
+            if (sounds.footsteps.isPlaying()) {
+                sounds.footsteps.stop();
+            }
+
+            // 'connecting' 객체가 아직 생성되지 않았다면, 여기서 생성
+            if (!connecting) {
+                connecting = new Connecting(
+                    selectedCard, nameResult, keeperImages, textBoxImage,
+                    () => { /* 이 콜백은 더 이상 사용되지 않습니다. */ },
+                    // '별자리 완성' 버튼 클릭 시 실행될 콜백
+                    async (capturedImg) => {
+                        console.log("별자리 캡처 완료! 최종 카드 생성 및 업로드를 시작합니다.");
+                        const constellationCharacteristic = connecting.storyResult;
+                        const finalConstellationName = connecting.nameResult.trim() + " 자리";
+                        
+                        const finalCardImage = constellationCardGenerator.createCardImage(
+                            introImages.taroBg,
+                            capturedImg,
+                            finalConstellationName,
+                            constellationCharacteristic
+                        );
+                        
+                        const longDataURL = finalCardImage.canvas.toDataURL('image/png');
+                        console.log("이미지 업로드 시도...");
+                        const shareableURL = await uploadAndGetUrl(longDataURL);
+
+                        if (shareableURL) {
+                            console.log("업로드 성공! 공유 URL:", shareableURL);
+                            outroScene.setFinalConstellationImage(finalCardImage);
+                            outroScene.setQRCodeUrl(shareableURL);
+                            sceneNumber = 4;
+                        } else {
+                            console.error("최종 카드 업로드에 실패했습니다. Outro 씬으로 전환할 수 없습니다.");
+                        }
+                    },
+                    starImages,
+                    newStarImage,
+                    sounds
+                );
+            }
+
+            // 'connecting' 씬의 페이드인 및 렌더링
+            if (fade < 255) {
+                tint(255, fade);
+                image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+                noTint();
+                fade += fadeSpeed;
+            } else {
+                image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+                connecting.update();
+                connecting.show();
+            }
         }
-    }
-}else if (sceneNumber === 4) {
+    } else if (sceneNumber === 4) {
     outroScene.draw();
     }
 }

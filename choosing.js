@@ -66,6 +66,8 @@ class Choosing {
     this.cardHeight = this.cardWidth * 3 / 2;
     this.newStarImage = newStarImage;
     this.starGlowing = false;
+    this.sounds = sounds;
+    this.isCardFrontShowing = [];
 
     this.displayedText = "";
     this.charIndex = 0;
@@ -182,6 +184,7 @@ class Choosing {
     this.blankIndex = 0;
     this.cardBackImages = cardBackImages;
     this.hoverAngles = new Array(cardSet.blanks[0].options.length).fill(0);
+    this.isCardFrontShowing = new Array(cardSet.blanks[0].options.length).fill(false);
     this.selectedIndex = -1;
     this.animatingCard = null;
     if (this.selectedCard.length === 0) {
@@ -272,6 +275,19 @@ class Choosing {
       let scaleAmt = 1;
       let angle = this.hoverAngles[c];
       let showFront = angle > HALF_PI;
+
+ if (!this.animating) {
+        if (showFront && !this.isCardFrontShowing[c]) {
+            if (this.sounds && this.sounds.cardFlip) {
+                this.sounds.cardFlip.play();
+            }
+            this.isCardFrontShowing[c] = true; // 상태를 '앞면'으로 변경
+        } else if (!showFront) {
+            // 카드가 다시 뒷면으로 돌아가면 상태 초기화 (효과음 재생 안 함)
+            this.isCardFrontShowing[c] = false;
+        }
+    }
+
 
       if (this.animating) {
         let t = constrain(
@@ -544,6 +560,9 @@ class Choosing {
         mouseY > card.y &&
         mouseY < card.y + card.h
       ) {
+        if (this.sounds && this.sounds.cardFly) {
+            this.sounds.cardFly.play();
+        }
         this.selectedIndex = card.index;
         this.animating = true;
         this.animationStart = frameCount;
@@ -633,6 +652,7 @@ class Choosing {
 
           if (this.blankIndex === 0) {
             this.blankIndex = 1;
+            this.isCardFrontShowing = new Array(this.cardSet.blanks[1].options.length).fill(false);
             this.hoverAngles = new Array(
               this.cardSet.blanks[1].options.length
             ).fill(0);

@@ -208,6 +208,7 @@ class IntroScene {
                 if (this.isMouseOverPixelPerfect(this.images.workshopImg, this.workshopRect)) {
                     if (this.sounds.door) this.sounds.door.play();
                     if (this.sounds.aura && this.sounds.aura.isPlaying()) this.sounds.aura.stop();
+                    if (this.sounds.bgm1) this.sounds.bgm1.fade(0, this.TRANSITION_DURATION / 1000);
                     this.gameState = 'TRANSITION_TO_INTRO';
                     this.transitionStartTime = millis();
                 }
@@ -389,14 +390,11 @@ class IntroScene {
     
         // 5. 전환이 완료되면 다음 상태로 넘어갑니다.
  if (progress >= 1) {
-        // 기존 BGM(bgm1)을 정지합니다.
-        if (this.sounds.bgm1 && this.sounds.bgm1.isPlaying()) {
-            this.sounds.bgm1.stop();
-        }
+
         
         // 새로운 BGM(bgm_1)을 재생합니다.
         if (this.sounds.bgm_1 && !this.sounds.bgm_1.isPlaying()) {
-            this.sounds.bgm_1.setVolume(1.9); // 볼륨을 1.3배로 설정
+            this.sounds.bgm_1.setVolume(2.5); // 볼륨을 1.3배로 설정
             this.sounds.bgm_1.loop();
         }
 
