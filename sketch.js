@@ -15,6 +15,7 @@ let introImages = {};
 let fade = 0;
 let fadeSpeed = 4;
 let sounds = {};
+let currentBGM = null; // 현재 재생 중인 BGM을 추적하는 변수
 let starImages = [];
 
 let constellationCardGenerator; // ConstellationCard 클래스의 인스턴스
@@ -101,6 +102,13 @@ function preload() {
     sounds.click = loadSound('assets/click.mp3');
     sounds.shootingStar = loadSound('assets/shootingStar.mp3');
 
+    sounds.bgm_1 = loadSound('assets/BGM_1.mp3'); // 공방 내부 BGM
+    sounds.hero = loadSound('assets/hero.1.mp3');
+    sounds.hopeful = loadSound('assets/hopeful.mp3');
+    sounds.silent = loadSound('assets/silent.mp3');
+    sounds.mature = loadSound('assets/mature.mp3');
+    sounds.happy = loadSound('assets/happy.mp3');
+    sounds.wise = loadSound('assets/wise.mp3');
 
 
 
@@ -163,14 +171,14 @@ const returnToStart = () => {
         {
           options: ["꽃이 만개하던", "햇살이 타오르던", "낙엽이 물들던", "함박눈이 내리던"],
           images: [imgList[0], imgList[1], imgList[2], imgList[3]],
-          bgms: [0,0,0,0],
+          bgms: ['hopeful', 'hero', 'mature', 'silent'], // BGM 키 할당
           nickNames: ["희망찬", "정오의", "성숙한", "고요한"],
           colors: [eachColor[1],eachColor[0],eachColor[3],eachColor[2]]
         },
         {
           options: ["세상을 이끌길", "진리를 탐구하길", "사랑을 전하길", "나만의 길을 가길"],
             images: [imgList[4], imgList[5], imgList[6], imgList[7]],
-            bgms: [0,0,0,0],
+            bgms: ['hero', 'wise', 'hopeful', 'wise'], // BGM 키 할당
             nickNames: ["선구적인","지혜로운","사랑의","자유로운"],
             colors: [eachColor[0],eachColor[5],eachColor[1],eachColor[5]]
         }
@@ -182,14 +190,14 @@ const returnToStart = () => {
         {
           options: ["소중한 인연", "세상의 인정", "간절했던 꿈", "몸과 마음의 안정"],
           images: [imgList[8], imgList[9], imgList[10], imgList[11]],
-          bgms: [0,0,0,0],
+          bgms: ['hopeful', 'hero', 'happy', 'mature'], // BGM 키 할당
           nickNames: ["믿음의","찬란한","갈망하는","평화로운"],
           colors: [eachColor[1],eachColor[0],eachColor[4],eachColor[3]]
         },
         {
           options: ["예상 못한 실패", "뼈아픈 이별", "깊은 외로움", "내면의 불신"],
           images: [imgList[12], imgList[13], imgList[14], imgList[15]],
-          bgms: [0,0,0,0],
+          bgms: ['wise', 'mature', 'silent', 'silent'], // BGM 키 할당
           nickNames: ["불굴의","아련한","고독한","고뇌하는"],
           colors: [eachColor[5],eachColor[3],eachColor[2],eachColor[2]]
         }
@@ -201,14 +209,14 @@ const returnToStart = () => {
         {
           options: ["푸른 나무에", "한줌 흙으로", "깊은 바다에", "뜨거운 불꽃으로"],
           images: [imgList[16], imgList[17], imgList[18], imgList[19]],
-          bgms: [0,0,0,0],
+          bgms: ['happy', 'mature', 'silent', 'hero'], // BGM 키 할당
           nickNames: ["생명의","대지의","심연의","불멸의"],
           colors: [eachColor[4],eachColor[3],eachColor[2],eachColor[0]]
         },
         {
           options: ["따뜻한 위로로", "함께한 웃음으로", "빛나는 길잡이로", "살아갈 힘으로"],
           images: [imgList[20], imgList[21], imgList[22], imgList[23]],
-          bgms: [0,0,0,0],
+          bgms: ['hopeful', 'happy', 'wise', 'happy'], // BGM 키 할당
           nickNames: ["따스한","행복한","눈부신","담대한"],
           colors: [eachColor[1],eachColor[4],eachColor[5],eachColor[4]]
         }
@@ -307,7 +315,8 @@ const updateSceneToConnecting = () => {
                     }
                 },
                 starImages,
-                newStarImage
+                newStarImage,
+                sounds
             );
         });
 };

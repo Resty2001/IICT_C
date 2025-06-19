@@ -16,7 +16,7 @@ const minDist = 50;
 
 class Connecting{
     // ⭐ constructor 설정 수정: onConstellationCompleteCallback 추가 ⭐
-    constructor(selectedCard, nameResult, keeperImages, textBoxImage, updateSceneNumberCallback, onConstellationCompleteCallback, starImages, newStarImage){
+    constructor(selectedCard, nameResult, keeperImages, textBoxImage, updateSceneNumberCallback, onConstellationCompleteCallback, starImages, newStarImage, sounds){
         this.selectedCard = selectedCard;
         this.newStarImage = newStarImage;
         this.nameResult = nameResult;
@@ -50,9 +50,11 @@ class Connecting{
         this.storyIndex = "";
         this.isTypingKeeper = true; 
         this.fontSize = 36; // Base font size, will be scaled
-    this.textPaddingX = 100; // Base padding, will be scaled
-    this.textPaddingY = 60; // Base padding, will be scaled
-    this.textInterval = 2;
+        this.textPaddingX = 100; // Base padding, will be scaled
+        this.textPaddingY = 60; // Base padding, will be scaled
+        this.textInterval = 2;
+        this.sounds = sounds; // sounds 객체 저장
+        this.starbgm = null; // 선택된 카드의 BGM 키를 저장할 변수
 
         // --- References for scaling ---
         this.ORIGINAL_WIDTH = 1920;
@@ -374,6 +376,7 @@ handleMousePressed() {
           this.isCardSelected = true;
 
           this.changeStarColor(); // Call your star color change function
+          this.changeBGM();
 
           let newStar;
           let maxTries = 100;
@@ -697,6 +700,27 @@ mouseReleased() {
     changeStarColor(){
         this.starColor = this.favoriteCard[0].colour;
     }
+
+      changeBGM() {
+        // 이전에 재생되던 공방 BGM을 정지합니다.
+        if (this.sounds.bgm_1 && this.sounds.bgm_1.isPlaying()) {
+            this.sounds.bgm_1.stop();
+        }
+
+        // ⭐ [수정] 선택한 카드의 'bgms'가 아닌 'bgm' 속성에서 BGM 키를 가져옵니다.
+        this.starbgm = this.favoriteCard[0].bgm;
+        
+        if (this.starbgm && this.sounds[this.starbgm]) {
+            const newBgm = this.sounds[this.starbgm];
+            if (newBgm.isLoaded() && !newBgm.isPlaying()) {
+                newBgm.setVolume(1.0); // 볼륨을 표준(1.0)으로 설정
+                newBgm.loop();
+                console.log("BGM 변경 완료:", this.starbgm); // BGM이 정상적으로 변경되었는지 확인용 로그
+            }
+        } else {
+            console.error("BGM 키를 찾지 못했거나, 로드되지 않았습니다:", this.starbgm);
+        }
+    }
 
     displayStarName() {
         // this.starNickname이 초기 null일 때만 업데이트

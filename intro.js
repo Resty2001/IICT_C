@@ -388,14 +388,17 @@ class IntroScene {
         }
     
         // 5. 전환이 완료되면 다음 상태로 넘어갑니다.
-        if (progress >= 1) {
-            // if (this.sounds.bgm1 && this.sounds.bgm1.isPlaying()) this.sounds.bgm1.stop(); // 이 줄을 주석 처리하여 bgm1이 멈추지 않게 합니다.
-            // if (this.sounds.bgm2 && !this.sounds.bgm2.isPlaying()) this.sounds.bgm2.loop();   // 이 줄을 주석 처리하여 bgm2가 시작되지 않게 합니다.
-            
-            // BGM 전환 없이 바로 다음 BGM(bgm2)을 위한 사운드 로딩 및 루프 설정만 진행하고, 실제 재생은 다른 시점에서 하도록 변경
-            if (this.sounds.bgm2 && !this.sounds.bgm2.isLooping()) {
-                 // 필요하다면 여기서 bgm2를 미리 준비시킬 수 있습니다. 지금은 아무것도 하지 않아도 됩니다.
-            }
+ if (progress >= 1) {
+        // 기존 BGM(bgm1)을 정지합니다.
+        if (this.sounds.bgm1 && this.sounds.bgm1.isPlaying()) {
+            this.sounds.bgm1.stop();
+        }
+        
+        // 새로운 BGM(bgm_1)을 재생합니다.
+        if (this.sounds.bgm_1 && !this.sounds.bgm_1.isPlaying()) {
+            this.sounds.bgm_1.setVolume(1.9); // 볼륨을 1.3배로 설정
+            this.sounds.bgm_1.loop();
+        }
 
             this.gameState = 'INTRO';
             this.dialogueIndex = 0;
