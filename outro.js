@@ -249,6 +249,13 @@ class OutroScene {
         }
     }
 
+handleKeyPressed() {
+    if (keyCode !== 32) return; // 스페이스바가 아니면 무시
+
+    // 마우스 클릭과 동일한 로직 호출
+    this.handleMousePressed();
+}
+
     /**
      * 마우스 클릭 이벤트를 처리합니다.
      */

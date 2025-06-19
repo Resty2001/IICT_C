@@ -17,6 +17,7 @@ let fadeSpeed = 4;
 let sounds = {};
 let currentBGM = null; // 현재 재생 중인 BGM을 추적하는 변수
 let starImages = [];
+let scene2and3_bg;
 
 let constellationCardGenerator; // ConstellationCard 클래스의 인스턴스
 let finalCardImage = null; // 생성된 최종 카드 이미지(p5.Graphics)
@@ -28,6 +29,7 @@ let auraHumSound;
 
 
 let fontHSBombaram, fontOgR; // 글꼴을 저장할 변수
+let fontDanjo;
 let isCardDesignTestMode = true;
 let loadingStartTime = 0; // 로딩 화면 시작 시간을 기록할 변수
 
@@ -64,6 +66,7 @@ function preload() {
     ]
     keeperImage = loadImage('assets/grandpa.first.png')
     backGroundImage = loadImage("assets/Nightsky_Blank.png");
+    scene2and3_bg = loadImage("assets/Nightsky_grad.png");
     introImages.startBg = loadImage('assets/startBg.png');
     introImages.title = loadImage('assets/title.png');
     introImages.startButton = loadImage('assets/button.png');
@@ -87,6 +90,7 @@ function preload() {
     // --- 아웃트로용 이미지 로드 추가 ---
     fontHSBombaram = loadFont('assets/HSBombaram.ttf');
     fontOgR = loadFont('assets/ogR.ttf');
+    fontDanjo = loadFont('assets/danjo.otf'); 
     introImages.qrCode = loadImage('assets/qrTest.png'); 
     introImages.finalConstellationTest = loadImage('assets/captureTest.png'); 
     introImages.buttonBg = loadImage('assets/button.png'); // 버튼 배경 이미지 로드
@@ -107,6 +111,7 @@ function preload() {
     sounds.cardFlip = loadSound('assets/cardFlip.mp3');
     sounds.cardFly = loadSound('assets/shootingStar.mp3');
      sounds.footsteps = loadSound('assets/footsteps.mp3'); // 발자국 소리 로드
+     sounds.switchingBgm = loadSound('assets/switchingBgm.mp3');
     
 
     sounds.bgm_1 = loadSound('assets/BGM_1.mp3'); // 공방 내부 BGM
@@ -356,11 +361,11 @@ function draw() {
     } else if (sceneNumber === 2) {
         if (fade < 255) {
             tint(255, fade);
-            image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+            image(scene2and3_bg, width / 2, height / 2, windowWidth, windowHeight);
             noTint();
             fade += fadeSpeed;
         } else {
-            image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+            image(scene2and3_bg, width / 2, height / 2, windowWidth, windowHeight);
             choosing.update();
             choosing.show();
             choosing.displayText();
@@ -426,11 +431,11 @@ function draw() {
             // 'connecting' 씬의 페이드인 및 렌더링
             if (fade < 255) {
                 tint(255, fade);
-                image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+                image(scene2and3_bg, width / 2, height / 2, windowWidth, windowHeight);
                 noTint();
                 fade += fadeSpeed;
             } else {
-                image(backGroundImage, width / 2, height / 2, windowWidth, windowHeight);
+                image(scene2and3_bg, width / 2, height / 2, windowWidth, windowHeight);
                 connecting.update();
                 connecting.show();
             }
@@ -574,8 +579,21 @@ async function uploadAndGetUrl(dataUrl) {
 
 
 async function keyPressed() {
+    // IntroScene의 키 입력 처리
     if (sceneNumber === 1 && introScene) {
         introScene.handleKeyPressed();
+    }
+    // ⭐ [추가] Choosing 씬의 키 입력 처리
+    else if (sceneNumber === 2 && choosing) {
+        choosing.handleKeyPressed();
+    }
+    // ⭐ [추가] Connecting 씬의 키 입력 처리
+    else if (sceneNumber === 3 && connecting) {
+        connecting.handleKeyPressed();
+    }
+    // ⭐ [추가] OutroScene의 키 입력 처리
+    else if (sceneNumber === 4 && outroScene) {
+        outroScene.handleKeyPressed();
     }
     
     // ==================================================================

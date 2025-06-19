@@ -394,7 +394,7 @@ class IntroScene {
         
         // 새로운 BGM(bgm_1)을 재생합니다.
         if (this.sounds.bgm_1 && !this.sounds.bgm_1.isPlaying()) {
-            this.sounds.bgm_1.setVolume(2.5); // 볼륨을 1.3배로 설정
+            this.sounds.bgm_1.setVolume(3.3); 
             this.sounds.bgm_1.loop();
         }
 

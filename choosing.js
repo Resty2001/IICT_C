@@ -412,39 +412,47 @@ class Choosing {
     pop();
 
     // 텍스트 박스
-    imageMode(CENTER);
-    tint(255, 255); // Reset tint for text box to full opacity
-    image(this.textBox, this.dialogueBoxRect.x + this.dialogueBoxRect.w / 2,
-      this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2,
-      this.dialogueBoxRect.w, this.dialogueBoxRect.h);
-    noTint(); // Clear tint after drawing the image
+imageMode(CENTER);
+tint(255, 255);
+image(this.textBox, this.dialogueBoxRect.x + this.dialogueBoxRect.w / 2,
+    this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2,
+    this.dialogueBoxRect.w, this.dialogueBoxRect.h);
+noTint();
 
-    const textX = this.dialogueBoxRect.x + this.textPaddingX;
-    // 텍스트 Y 시작 위치를 텍스트 박스 상단 패딩만큼만 띄우도록 수정
-    const textY = this.dialogueBoxRect.y + this.textPaddingY;
+const textX = this.dialogueBoxRect.x + this.textPaddingX;
+const textBoxContentWidth = this.dialogueBoxRect.w - (this.textPaddingX * 2);
 
-    // 텍스트 영역의 너비 계산은 그대로
-    const textBoxContentWidth = this.dialogueBoxRect.w - (this.textPaddingX * 2);
-    // 텍스트 영역의 높이 계산: 전체 텍스트 박스 높이에서 상하 패딩을 뺀 값
-    const textBoxContentHeight = this.dialogueBoxRect.h - (this.textPaddingY * 2);
+// ⭐ [수정 1] 텍스트의 y 좌표를 대화 상자 세로 중앙으로 설정합니다.
+const fullDialogue = texts[this.idx]; // connecting.js의 경우: const fullDialogue = this.keeperDialogue[this.index];
 
 
     if (this.isTypingKeeper) {
-      if (frameCount % this.interval === 0 && this.keeperIndex < texts[this.idx].length) {
-        this.keeperText += texts[this.idx][this.keeperIndex];
-        this.keeperIndex++;
-      } else if (this.keeperIndex >= texts[this.idx].length) {
-        this.isTypingKeeper = false; // Typing finished
-      }
+        if (frameCount % this.interval === 0 && this.keeperIndex < fullDialogue.length) {
+            this.keeperIndex++;
+        } else if (this.keeperIndex >= fullDialogue.length) {
+            this.isTypingKeeper = false;
+        }
+        this.keeperText = fullDialogue.substring(0, this.keeperIndex);
     }
 
+// 3. 전체 텍스트를 기준으로 최종 높이를 계산합니다.
+    textLeading(this.fontSize * 1.5);
+    const fullWrappedText = this.wrapText(fullDialogue, textBoxContentWidth);
+    const numLines = (fullWrappedText.match(/\n/g) || []).length + 1;
+    const totalTextHeight = numLines * textLeading();
+
+    // 4. 최종 높이를 기준으로 텍스트 블록의 시작 y 좌표를 고정합니다.
+    const contentBoxTop = this.dialogueBoxRect.y + this.textPaddingY;
+    const contentBoxHeight = this.dialogueBoxRect.h - (this.textPaddingY * 2);
+    const startY = contentBoxTop + (contentBoxHeight - totalTextHeight) / 2;
+
+    // 5. 현재까지 타이핑된 텍스트를 고정된 y 좌표에 그립니다.
     fill(255, this.keeperAlpha);
     noStroke();
     textSize(this.fontSize);
-    textLeading(this.fontSize * 1.5); 
-    textAlign(LEFT, TOP);
-    let wrapped = this.wrapText(this.keeperText, textBoxContentWidth);
- text(wrapped, textX, textY, textBoxContentWidth, textBoxContentHeight);
+    textAlign(LEFT, TOP); // 정렬을 TOP으로 해야 y좌표가 기준이 됩니다.
+    let currentWrappedText = this.wrapText(this.keeperText, textBoxContentWidth);
+    text(currentWrappedText, textX, startY);
 
     // Show pulsing triangle when typing is finished
     if (!this.isTypingKeeper) {
@@ -457,30 +465,57 @@ class Choosing {
   }
 
   displayText() {
-    if (this.keeperState === "done") {
-      if (
-        frameCount % this.interval === 0 &&
-        this.charIndex < this.storyText.length
-      ) {
-        this.displayedText += this.storyText[this.charIndex];
-        this.charIndex++;
-      }
+ if (this.keeperState === "done") {
+        if (
+            frameCount % this.interval === 0 &&
+            this.charIndex < this.storyText.length
+        ) {
+            this.displayedText += this.storyText[this.charIndex];
+            this.charIndex++;
+        }
 
-      fill(255);
-      noStroke();
-      textSize(this.fontSize);
-      textAlign(CENTER, CENTER); // 스토리 텍스트는 중앙 정렬 유지
-
-      let textDrawX = this.storyTextBoxRect.x - this.storyTextBoxRect.w/2;
-      let textDrawY = this.storyTextBoxRect.y - this.storyTextBoxRect.h / 2;
-      let textDrawWidth = this.storyTextBoxRect.w;
-      let textDrawHeight = this.storyTextBoxRect.h; // 이 높이 안에서 텍스트가 줄바꿈됩니다.
-
-      let wrapped = this.wrapText(this.displayedText, textDrawWidth);
-      text(wrapped, textDrawX, textDrawY, textDrawWidth, textDrawHeight);
       
+        
+        // ⭐ [수정] 폰트를 danjo.ttf로 변경하고, 크기를 약간 조절합니다.
+        if (fontDanjo) {
+            textFont(fontDanjo);
+        }
+        const currentTextSize = this.fontSize * 1.1;
+        textSize(currentTextSize);
+
+         const textW = textWidth(this.displayedText); // 현재 텍스트의 너비 계산
+        const textH = textAscent() + textDescent();  // 현재 폰트의 높이 계산
+        
+        const scale = width / this.ORIGINAL_WIDTH;
+        const paddingX = 60 * scale; // 좌우 여백
+        const paddingY = 30 * scale; // 상하 여백
+        const cornerRadius = 20 * scale; // 모서리 둥글기
+
+        // 텍스트가 한 글자라도 있을 때만 배경을 표시
+        if (textW > 0) {
+            const rectX = this.storyTextBoxRect.x;
+            const rectY = this.storyTextBoxRect.y;
+            const rectW = textW + paddingX;
+            const rectH = textH + paddingY;
+
+            push();
+            rectMode(CENTER);
+            noStroke();
+            fill(0, 0, 0, 100); // 반투명한 검은색 배경
+            rect(rectX, rectY, rectW, rectH, cornerRadius);
+            pop();
+        }
+
+        fill(255);
+        noStroke();
+        textAlign(CENTER, CENTER);
+        const yOffset = currentTextSize * 0.1; 
+        text(this.displayedText, this.storyTextBoxRect.x, this.storyTextBoxRect.y - yOffset);
+
+        // 다른 UI에 영향을 주지 않도록 기본 폰트로 되돌립니다.
+        textFont('sans-serif');
     }
-  }
+}
 
   wrapText(txt, maxWidth) {
     let words = txt.split("");
@@ -515,6 +550,30 @@ class Choosing {
     }
   }
 
+handleKeyPressed() {
+    if (keyCode !== 32) return; // 스페이스바가 아니면 무시
+
+    if (this.keeperState === "showing" || this.keeperState === "waiting") {
+        if (this.isTypingKeeper) {
+            // 타이핑 중이면 즉시 완료
+            this.keeperText = texts[this.idx];
+            this.keeperIndex = texts[this.idx].length;
+            this.isTypingKeeper = false;
+            // ⭐ [수정] 타이핑을 건너뛴 후, 바로 다음 입력을 받을 수 있도록 상태를 'waiting'으로 변경합니다.
+            this.keeperState = "waiting"; 
+        } else if (this.keeperState === "waiting") {
+            // 타이핑이 끝났으면 대화창 닫기
+            this.keeperAlpha = 0;
+            if (this.selectedCard.length === 6 && this.idx === (texts.length - 1)) {
+                if (this.sceneTransitionCallback) {
+                    this.sceneTransitionCallback();
+                }
+            }
+            this.keeperState = "done";
+        }
+    }
+}
+
   handleMousePressed(callbackForNextSet) {
     // Re-calculate UI elements on mouse press in case of dynamic resizing
     this.setupUIElements();
@@ -535,7 +594,8 @@ class Choosing {
           this.keeperText = texts[this.idx];
           this.keeperIndex = texts[this.idx].length;
           this.isTypingKeeper = false;
-          this.keeperAlpha = 200;
+          this.keeperAlpha = 255;
+          this.keeperState = "waiting";
         } 
         else if (this.keeperState === "waiting") {
           // Advance dialogue after typing is complete

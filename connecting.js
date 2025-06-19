@@ -435,6 +435,38 @@ handleMousePressed() {
         }
     }
 
+
+handleKeyPressed() {
+    if (keyCode !== 32) return; // 스페이스바가 아니면 무시
+
+    if (this.keeperState === "showing" || this.keeperState === "waiting") {
+        if (this.isTypingKeeper) {
+            // 타이핑 중이면 즉시 완료
+            this.keeperText = this.keeperDialogue[this.index];
+            this.keeperIndex = this.keeperDialogue[this.index].length;
+            this.isTypingKeeper = false;
+        } else if (this.keeperState === "waiting") {
+            // 타이핑 완료 상태면 다음으로
+            if (this.index === 0 || this.index === 1 || this.index === 2 || this.index === 4) {
+                this.keeperState = "showing";
+                this.index++;
+            } else {
+                this.keeperState = "done";
+                if (this.index === 6) {
+                    if (this.updateSceneNumber) {
+                        this.updateSceneNumber();
+                    }
+                }
+            }
+            this.keeperText = "";
+            this.keeperIndex = 0;
+            this.keeperAlpha = 0;
+            this.isTypingKeeper = true;
+        }
+    }
+}
+
+
     // ⭐ mouseReleased() 함수 수정: 유효성 검사 및 위치 복귀 로직 및 캡처 로직 ⭐
 mouseReleased() {
     if (this.index === 5) { // Index 5에서만 작동
@@ -604,21 +636,29 @@ mouseReleased() {
   pop();
 
   // Text box image
-  imageMode(CENTER);
-  tint(255, 255); // Reset tint for text box to full opacity
-  image(
-    this.textBox,
-    this.dialogueBoxRect.x + this.dialogueBoxRect.w / 2,
-    this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2,
-    this.dialogueBoxRect.w,
-    this.dialogueBoxRect.h
-  );
-  noTint(); // Clear tint after drawing the image
+ imageMode(CENTER);
+tint(255, 255);
+image(
+        this.textBox,
+        this.dialogueBoxRect.x + this.dialogueBoxRect.w / 2,
+        this.dialogueBoxRect.y + this.dialogueBoxRect.h / 2,
+        this.dialogueBoxRect.w,
+        this.dialogueBoxRect.h
+    );
+    noTint();
 
-  const textX = this.dialogueBoxRect.x + this.textPaddingX;
-  const textY = this.dialogueBoxRect.y + this.textPaddingY;
-  const textBoxContentWidth = this.dialogueBoxRect.w - (this.textPaddingX * 2);
-  const textBoxContentHeight = this.dialogueBoxRect.h - (this.textPaddingY * 2);
+    const textX = this.dialogueBoxRect.x + this.textPaddingX;
+    const textBoxContentWidth = this.dialogueBoxRect.w - (this.textPaddingX * 2);
+    const textBoxContentHeight = this.dialogueBoxRect.h - (this.textPaddingY * 2);
+    const d = this.dialogueBoxRect;
+
+    const fullText = this.keeperDialogue[this.index];
+    const fullWrappedText = this.wrapText(fullText, textBoxContentWidth);
+    const numLines = (fullWrappedText.match(/\n/g) || []).length + 1;
+    const textBlockHeight = numLines * (this.fontSize * 1.5); // textLeading 값(1.5)을 곱해 전체 높이 계산
+
+    // 2. 텍스트 블록이 세로 중앙에 오도록 시작 Y 좌표를 고정합니다.
+    const startY = d.y + this.textPaddingY + (textBoxContentHeight - textBlockHeight) / 2;
 
   if (this.isTypingKeeper) {
     if (frameCount % this.textInterval === 0 && this.keeperIndex < this.keeperDialogue[this.index].length) {
@@ -629,13 +669,15 @@ mouseReleased() {
     }
   }
 
-  fill(255, this.keeperAlpha);
-  noStroke();
-  textSize(this.fontSize);
-  textLeading(this.fontSize * 1.5); // Adjust line spacing
-  textAlign(LEFT, TOP);
-  let wrapped = this.wrapText(this.keeperText, textBoxContentWidth);
-  text(wrapped, textX, textY, textBoxContentWidth, textBoxContentHeight);
+fill(255, this.keeperAlpha);
+    noStroke();
+    textSize(this.fontSize);
+    textLeading(this.fontSize * 1.5);
+    // ⭐ [수정] 정렬을 다시 TOP 기준으로 변경합니다.
+    textAlign(LEFT, TOP);
+    let wrapped = this.wrapText(this.keeperText, textBoxContentWidth);
+    // ⭐ [수정] 미리 계산된 Y좌표에서 텍스트를 그립니다.
+    text(wrapped, textX, startY);
 
   // Show pulsing triangle when typing is finished
   if (!this.isTypingKeeper) {
@@ -707,20 +749,25 @@ mouseReleased() {
             this.sounds.bgm_1.stop();
         }
 
-        // ⭐ [수정] 선택한 카드의 'bgms'가 아닌 'bgm' 속성에서 BGM 키를 가져옵니다.
+        if (this.sounds.switchingBgm && this.sounds.switchingBgm.isLoaded()) {
+        this.sounds.switchingBgm.play();
+    }
+    
+    setTimeout(() => {
         this.starbgm = this.favoriteCard[0].bgm;
         
         if (this.starbgm && this.sounds[this.starbgm]) {
             const newBgm = this.sounds[this.starbgm];
             if (newBgm.isLoaded() && !newBgm.isPlaying()) {
-                newBgm.setVolume(1.0); // 볼륨을 표준(1.0)으로 설정
+                newBgm.setVolume(1.0);
                 newBgm.loop();
-                console.log("BGM 변경 완료:", this.starbgm); // BGM이 정상적으로 변경되었는지 확인용 로그
+                console.log("BGM 변경 완료:", this.starbgm);
             }
         } else {
             console.error("BGM 키를 찾지 못했거나, 로드되지 않았습니다:", this.starbgm);
         }
-    }
+    }, 4000); // 5초 딜레이
+}
 
     displayStarName() {
         // this.starNickname이 초기 null일 때만 업데이트
