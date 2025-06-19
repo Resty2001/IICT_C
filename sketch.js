@@ -8,7 +8,7 @@ let imgList = [];
 let cardSets = [];
 let selectedCard = []; // 이 변수에 선택된 카드들이 저장됩니다.
 let cardBackImages = [];
-let sceneNumber = 2;
+let sceneNumber = 1;
 let introScene, outroScene;
 let keeperImages = [];
 let introImages = {};
@@ -262,7 +262,7 @@ const updateSceneToConnecting = () => {
 
     Promise.all([createName(selectedWords)])
         .then(([generatedName]) => {
-            nameResult = generatedName;
+            nameResult = generatedName.replace(/(\r\n|\n|\r)/gm, "").trim();
             isGenerating = false;
             console.log("AI 생성 완료:", nameResult);
 
@@ -270,22 +270,33 @@ const updateSceneToConnecting = () => {
                 selectedCard, nameResult, keeperImages, textBoxImage,
                 () => { /* 이 콜백은 더 이상 사용되지 않습니다. */ },
                 // '별자리 완성' 버튼 클릭 시 실행될 콜백
-                async (capturedImg) => {
+ async (capturedImg) => {
                     console.log("별자리 캡처 완료! 최종 카드 생성 및 업로드를 시작합니다.");
+
+                    // 별자리 특성 문장을 가져옵니다. (이전과 동일)
+                    const constellationCharacteristic = connecting.storyResult;
                     
-                    // 1. 최종 카드 이미지 생성
+                    // [핵심 수정] 별자리 이름 생성 로직 변경
+                    // 기존에는 수식어가 없는 'nameResult'를 사용했지만,
+                    // 이제는 connecting 객체 내부에서 수식어가 합쳐진 'connecting.nameResult'를 사용합니다.
+                    const finalConstellationName = connecting.nameResult.trim() + " 자리";
+                    
+                    // 최종 카드 이미지 생성
                     const finalCardImage = constellationCardGenerator.createCardImage(
-                        introImages.taroBg, capturedImg, story, nameResult
+                        introImages.taroBg,
+                        capturedImg,
+                        finalConstellationName,       // ⭐ 수식어가 포함된 이름으로 전달
+                        constellationCharacteristic
                     );
                     
-                    // 2. 카드 이미지를 Data URL로 변환
+                    // 카드 이미지를 Data URL로 변환
                     const longDataURL = finalCardImage.canvas.toDataURL('image/png');
                     
-                    // 3. 서버에 업로드하고 짧은 URL 받기
+                    // 서버에 업로드하고 짧은 URL 받기
                     console.log("이미지 업로드 시도...");
                     const shareableURL = await uploadAndGetUrl(longDataURL);
 
-                    // 4. 성공 시 Outro 씬 설정 및 전환
+                    // 성공 시 Outro 씬 설정 및 전환
                     if (shareableURL) {
                         console.log("업로드 성공! 공유 URL:", shareableURL);
                         outroScene.setFinalConstellationImage(finalCardImage);
@@ -293,7 +304,6 @@ const updateSceneToConnecting = () => {
                         sceneNumber = 4;
                     } else {
                         console.error("최종 카드 업로드에 실패했습니다. Outro 씬으로 전환할 수 없습니다.");
-                        // 여기에 실패 시 사용자에게 보여줄 UI나 로직을 추가할 수 있습니다.
                     }
                 },
                 starImages,
@@ -544,40 +554,3 @@ async function keyPressed() {
 
 
 
-// QR코드를 위한 별자리 배경 제거 코드
-
-/**
- * 특정 색상과 유사한 배경을 제거하는 새로운 함수
- * @param {p5.Image} sourceImage - 배경을 제거할 원본 이미지
- * @param {p5.Color} targetColor - 제거할 배경의 기준 색상
- * @param {number} tolerance - 색상 유사도 허용 범위. 클수록 더 넓은 범위의 색을 제거합니다.
- * @returns {p5.Graphics} 배경이 제거된 새 그래픽 객체
- */
-function removeBackgroundByColor(sourceImage, targetColor, tolerance) {
-  const result = createGraphics(sourceImage.width, sourceImage.height);
-  sourceImage.loadPixels();
-
-  const targetR = red(targetColor);
-  const targetG = green(targetColor);
-  const targetB = blue(targetColor);
-
-  for (let y = 0; y < sourceImage.height; y++) {
-    for (let x = 0; x < sourceImage.width; x++) {
-      const index = (y * sourceImage.width + x) * 4;
-      const r = sourceImage.pixels[index];
-      const g = sourceImage.pixels[index + 1];
-      const b = sourceImage.pixels[index + 2];
-      const a = sourceImage.pixels[index + 3];
-
-      // 기준색(targetColor)과 현재 픽셀 색상 사이의 거리를 계산합니다.
-      const d = dist(r, g, b, targetR, targetG, targetB);
-
-      // ⭐ 핵심 로직: 색상 거리가 허용 범위(tolerance)보다 클 경우에만 픽셀을 그립니다.
-      if (d > tolerance) {
-        result.stroke(r, g, b, a);
-        result.point(x, y);
-      }
-    }
-  }
-  return result;
-}

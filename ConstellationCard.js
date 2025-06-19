@@ -8,7 +8,7 @@ class ConstellationCard {
 
 // ConstellationCard.js 파일의 createCardImage 함수를 아래 코드로 교체해주세요.
 
-    createCardImage(bgImage, constellationImage, story, name) {
+createCardImage(bgImage, constellationImage, name, story) {
         let card = createGraphics(this.cardWidth, this.cardHeight);
         
         card.push();
@@ -22,38 +22,38 @@ class ConstellationCard {
             let imgWidth = this.cardWidth * 0.8;
             let imgHeight = imgWidth * (constellationImage.height / constellationImage.width);
             let imgX = (this.cardWidth - imgWidth) / 2;
-            // ⭐ 1. [수정] 이미지 위치를 아래로 더 내립니다.
-            let imgY = this.cardHeight * 0.12; 
+            // ⭐ [수정 1] 별자리 이미지 위치를 위로 올립니다. (0.12 -> 0.10)
+            let imgY = this.cardHeight * 0.10; 
             card.imageMode(CORNER);
             card.image(constellationImage, imgX, imgY, imgWidth, imgHeight);
         }
         
-        // 3. 별자리 이름("치유사자리") 텍스트 그리기
+        // 3. 별자리 이름("치유사 자리") 텍스트 그리기
         card.textAlign(CENTER, CENTER);
         card.noStroke();
-        // ⭐ 2. [수정] 이름 글꼴과 색상을 지정합니다.
         if (this.fonts && this.fonts.title) {
             card.textFont(this.fonts.title);
         }
         card.fill('#FDBB53'); 
-        card.textSize(this.cardWidth * 0.075);
+        // ⭐ [수정 2] 이름이 한 줄에 표시되도록 폰트 크기를 미세 조정합니다. (0.075 -> 0.07)
+        card.textSize(this.cardWidth * 0.07);
         card.textStyle(BOLD);
-        card.text(name, this.cardWidth / 2, this.cardHeight * 0.67);
+        // ⭐ [수정 3] 이름 텍스트 위치를 위로 올립니다. (0.67 -> 0.65)
+        card.text(name, this.cardWidth / 2, this.cardHeight * 0.65);
 
         // 4. 별자리 이야기 텍스트 그리기
-        // ⭐ 3. [수정] 이야기 글꼴과 색상을 지정합니다.
         if (this.fonts && this.fonts.story) {
             card.textFont(this.fonts.story);
         }
         card.fill('#FDBB53');
-        card.textSize(this.cardWidth * 0.05); // 폰트 크기 미세 조정
+        card.textSize(this.cardWidth * 0.05);
         card.textStyle(NORMAL);
         
-        // ⭐ 4. [수정] 텍스트를 왼쪽 정렬하고, 위치를 좌측으로 크게 이동시킵니다.
         card.textAlign(CENTER, TOP); 
         let storyMaxWidth = this.cardWidth * 0.75;
-        let storyX = this.cardWidth * 0.125; // 카드 왼쪽 끝에서 10% 떨어진 위치
-        let storyY = this.cardHeight * 0.75;
+        let storyX = this.cardWidth * 0.125;
+        // ⭐ [수정 4] 이야기 텍스트 위치를 위로 올립니다. (0.75 -> 0.73)
+        let storyY = this.cardHeight * 0.73;
         let storyH = this.cardHeight * 0.2;
         card.text(story, storyX, storyY, storyMaxWidth, storyH);
 

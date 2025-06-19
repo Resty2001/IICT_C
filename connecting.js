@@ -169,7 +169,8 @@ this.hoveredCardIndex = -1;
         this.textPaddingY = 60 * scaleY; // 텍스트 박스 상하 패딩
         this.starNameTextSize = this.fontSize * 1.5; // 별 이름 폰트 크기 (스토리 텍스트의 1.5배)
     }
-    // ---
+    
+
 
     update(){
      this.setupUIElements();
@@ -432,86 +433,118 @@ handleMousePressed() {
     }
 
     // ⭐ mouseReleased() 함수 수정: 유효성 검사 및 위치 복귀 로직 및 캡처 로직 ⭐
-    mouseReleased() {
-        if (this.index === 5) { // Index 5에서만 작동
-            if (this.draggingStar != null) {
-                let dragged = this.extraStarPositions[this.draggingStar];
-                let isValidPosition = true;
+mouseReleased() {
+    if (this.index === 5) { // Index 5에서만 작동
+        if (this.draggingStar != null) {
+            let dragged = this.extraStarPositions[this.draggingStar];
+            let isValidPosition = true;
 
-                // 1. 별자리 영역 내에 있는지 검사
-                let captureX = this.starImageRect.x - this.starImageRect.w / 2;
-                let captureY = this.starImageRect.y - this.starImageRect.h / 2;
-                let captureW = this.starImageRect.w;
-                let captureH = this.starImageRect.h;
+            // 1. 별자리 영역 내에 있는지 검사
+            let captureBox = {
+                x: this.starImageRect.x - this.starImageRect.w / 2,
+                y: this.starImageRect.y - this.starImageRect.h / 2,
+                w: this.starImageRect.w,
+                h: this.starImageRect.h
+            };
+            if (dragged.x < captureBox.x || dragged.x > captureBox.x + captureBox.w ||
+                dragged.y < captureBox.y || dragged.y > captureBox.y + captureBox.h) {
+                isValidPosition = false;
+            }
 
-                let withinX = dragged.x >= captureX && dragged.x <= captureX + captureW;
-                let withinY = dragged.y >= captureY && dragged.y <= captureY + captureH;
+            // 2. 다른 별들과 minDist 이상 떨어져 있는지 검사
+            if (isValidPosition) {
+                const allStars = [...this.starPositions];
+                this.extraStarPositions.forEach((star, i) => {
+                    if (i !== this.draggingStar) allStars.push(star);
+                });
+                for (let s of allStars) {
+                    if (dist(s.x, s.y, dragged.x, dragged.y) < minDist) {
+                        isValidPosition = false;
+                        break;
+                    }
+                }
+            }
 
-                if (!withinX || !withinY) {
-                    isValidPosition = false;
-                }
+            // 위치가 유효하지 않으면 초기 위치로 되돌립니다.
+            if (!isValidPosition) {
+                this.extraStarPositions[this.draggingStar].x = this.initialStarPosition.x;
+                this.extraStarPositions[this.draggingStar].y = this.initialStarPosition.y;
+            }
+            this.draggingStar = null; // 드래그 상태 해제
+        }
 
-                // 2. 다른 별들과 minDist 이상 떨어져 있는지 검사
-                if (isValidPosition) { // 이미 경계 내에 있을 경우에만 다른 별과의 거리 검사
-                    const allStars = [...this.starPositions]; // 기존 별들
-                    for (let i = 0; i < this.extraStarPositions.length; i++) {
-                        if (i !== this.draggingStar) { // 현재 드래그 중인 별 자신은 제외
-                            allStars.push(this.extraStarPositions[i]);
-                        }
-                    }
+        // "별자리 완성" 버튼 클릭 로직
+        const btnBox = {
+             x: width * 5 / 6, y: height * 12 / 13,
+             w: 160, h: 100
+        };
 
-                    for (let s of allStars) {
-                        if (dist(s.x, s.y, dragged.x, dragged.y) < minDist) {
-                            isValidPosition = false; // minDist보다 가까우면 유효하지 않음
-                            break;
-                        }
-                    }
-                }
+        if (mouseX >= btnBox.x - btnBox.w / 2 && mouseX <= btnBox.x + btnBox.w / 2 &&
+            mouseY >= btnBox.y - btnBox.h / 2 && mouseY <= btnBox.y + btnBox.h / 2) {
 
-                // 위치가 유효하지 않으면 초기 위치로 되돌림
-                if (!isValidPosition) {
-                    this.extraStarPositions[this.draggingStar].x = this.initialStarPosition.x;
-                    this.extraStarPositions[this.draggingStar].y = this.initialStarPosition.y;
-                }
+            // ⭐ [핵심 수정] 투명한 그래픽 버퍼에 별자리 요소를 직접 그려 완벽하게 캡처합니다.
+            
+            const captureW = this.starImageRect.w;
+            const captureH = this.starImageRect.h;
+            const captureX = this.starImageRect.x - captureW / 2;
+            const captureY = this.starImageRect.y - captureH / 2;
 
-                this.draggingStar = null; // 드래그 상태 해제
-            }
+            // 1. 투명한 도화지(버퍼) 생성
+            const buffer = createGraphics(captureW, captureH);
+            const guideImageAlpha = 100;
+            
+            // 2. 버퍼에 희미한 가이드 이미지 그리기
+            buffer.imageMode(CENTER);
+            buffer.tint(255, guideImageAlpha);
+            buffer.image(this.starImage, captureW / 2, captureH / 2, captureW, captureH);
+            buffer.noTint();
 
-            // "별자리 완성" 버튼 클릭 로직
-            let bx = width * 5 / 6; // 버튼의 중심 x 좌표
-            let by = height * 12 / 13; // 버튼의 중심 y 좌표
-            let bw = 160;
-            let bh = 100;
+            // 3. 버퍼에 별과 선 그리기
+            const allStars = [...this.starPositions, ...this.extraStarPositions];
+            
+            // 선 그리기
+           buffer.stroke('#FDBB53'); // 선 색상을 황금빛으로 변경
+           buffer.strokeWeight(1);      // 선 두께를 10에서 3으로 변경
+            const existingLines = []; // 교차하지 않는 선만 그리기 위한 배열
+            for (let i = 0; i < allStars.length; i++) {
+                for (let j = i + 1; j < allStars.length; j++) {
+                    let a = allStars[i];
+                    let b = allStars[j];
+                    
+                    if (dist(a.x, a.y, b.x, b.y) < 500) {
+                        // 별의 절대 좌표를 버퍼의 상대 좌표로 변환
+                        let p1 = { x: a.x - captureX, y: a.y - captureY };
+                        let p2 = { x: b.x - captureX, y: b.y - captureY };
 
-            // 마우스가 버튼 클릭 영역 안에 있는지 확인
-            if (mouseX >= bx - bw / 2 && mouseX <= bx + bw / 2 &&
-                mouseY >= by - bh / 2 && mouseY <= by + bh / 2) {
-                
-                // ⭐ 메인 캔버스에서 별자리 영역 (배경, starImage, 별, 선 포함)을 직접 캡처 ⭐
-                const captureX = this.starImageRect.x - this.starImageRect.w / 2;
-                const captureY = this.starImageRect.y - this.starImageRect.h / 2;
-                const captureW = this.starImageRect.w;
-                const captureH = this.starImageRect.h;
+                        let intersects = existingLines.some(line => this.linesIntersect(p1, p2, line.p1, line.p2));
+                        if (!intersects) {
+                            existingLines.push({ p1, p2 });
+                            buffer.line(p1.x, p1.y, p2.x, p2.y);
+                        }
+                    }
+                }
+            }
+            
+            // 별 그리기
+            buffer.imageMode(CENTER);
+            allStars.forEach(star => {
+                const starSize = (star.isExtra ? width * height / 20000 : width * height / 30000);
+                 // 별의 절대 좌표를 버퍼의 상대 좌표로 변환
+                buffer.image(this.newStarImage, star.x - captureX, star.y - captureY, starSize, starSize);
+            });
 
-                // get() 함수는 p5.Image 객체를 반환합니다.
-                this.myStar = get(captureX, captureY, captureW, captureH);
-                
-                // p5.Image 객체의 내부 canvas 엘리먼트에서 toDataURL()을 호출합니다.
-                // 이 방법은 P5.js 문서에서 권장하는 방식이며, 안정적으로 작동합니다.
-                this.myStarURL = this.myStar.canvas.toDataURL('image/png');
-                const bgColor = this.myStar.get(5, 5);
-                const constellationWithoutBg = removeBackgroundByColor(this.myStar, bgColor, 80);
-                
-                // ⭐ 별자리 이미지와 URL을 외부로 전달하는 콜백 함수 호출 ⭐
-                if (this.onConstellationComplete) {
-                    this.onConstellationComplete(constellationWithoutBg, this.myStarURL);
-                }
+            // 4. 완성된 버퍼(투명 배경의 별자리 이미지)를 콜백으로 전달
+            if (this.onConstellationComplete) {
+                this.onConstellationComplete(buffer);
+            }
 
-                this.index++; // 다음 단계로 이동
-                this.keeperState = "showing"; // 다음 키퍼 대화 시작
-            }
-        }
-    }
+            this.index++;
+            this.keeperState = "showing";
+        }
+    }
+}
+
+
     // 이펙트는 추후에 구현
     handleMouseOver(){
         // 마우스가 카드 위에 있으면 빛이 남

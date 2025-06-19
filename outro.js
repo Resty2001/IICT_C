@@ -361,125 +361,116 @@ class OutroScene {
     
     // ⭐ [전면 수정] 요청하신 대로 교체된, 마지막 화면 그리기 함수입니다.
     drawFinalScreen() {
-        const elapsedTime = millis() - this.fadeStartTime;
-        imageMode(CENTER);
-        rectMode(CENTER);
+    const elapsedTime = millis() - this.fadeStartTime;
+    imageMode(CENTER);
+    rectMode(CENTER);
 
-        // --- 공통 변수 설정 (시간에 따른 알파값 계산) ---
-        const fadeInStart = 1000;
-        const fadeInDuration = 2000;
-        let contentAlpha = 0;
-        if (elapsedTime > fadeInStart) {
-            contentAlpha = lerp(0, 255, constrain((elapsedTime - fadeInStart) / fadeInDuration, 0, 1));
-        }
+    // --- [수정] 빛 효과 계산 로직 ---
+    // 일관된 속도의 느린 시간 변수를 만듭니다.
+    const pulseTime = millis() * 0.0008; 
 
-        const buttonDelay = 3000;
-        const buttonFadeDuration = 1500;
-        let buttonAlpha = 0;
-        if (elapsedTime > buttonDelay) {
-            buttonAlpha = lerp(0, 255, constrain((elapsedTime - buttonDelay) / buttonFadeDuration, 0, 1));
-        }
-        
-        // ⭐ 종료 페이드아웃 중에는 콘텐츠가 사라지지 않도록 알파값을 고정합니다.
-        if (this.sceneState === 'FADING_OUT_TO_WHITE') {
-            contentAlpha = 255;
-            buttonAlpha = 255;
-        }
+    // 화면 콘텐츠의 알파값(투명도)을 계산합니다.
+    const fadeInStart = 1000;
+    const fadeInDuration = 2000;
+    let contentAlpha = (elapsedTime > fadeInStart) ? lerp(0, 255, constrain((elapsedTime - fadeInStart) / fadeInDuration, 0, 1)) : 0;
 
-        // 배경 어둡게 처리
-        if (contentAlpha > 0) {
-            push();
-            fill(0, 0, 0, contentAlpha * 0.4);
-            rect(width / 2, height / 2, width, height);
-            pop();
-        }
+    // 버튼의 알파값을 계산합니다.
+    const buttonDelay = 3000;
+    const buttonFadeDuration = 1500;
+    let buttonAlpha = (elapsedTime > buttonDelay) ? lerp(0, 255, constrain((elapsedTime - buttonDelay) / buttonFadeDuration, 0, 1)) : 0;
 
-        // --- 1. 왼쪽: 별자리 카드 그리기 ---
-        if (this.finalConstellationImage && contentAlpha > 0) {
-            const cardGlowPulse = map(sin(millis() * 0.002), -1, 1, 0.6, 1.1);
-            const cardShadowBlur = 40 * cardGlowPulse;
-            const cardGlowColor = color(255, 255, 220, contentAlpha * 0.6);
-            
-            const cardAspectRatio = this.finalConstellationImage.width / this.finalConstellationImage.height;
-            let cardW = width * 0.4;
-            let cardH = cardW / cardAspectRatio;
-            // 카드가 화면을 벗어나지 않도록 크기 조정
-            if (cardH > height * 0.8) {
-                cardH = height * 0.8;
-                cardW = cardH * cardAspectRatio;
-            }
-            const cardX = width / 4;
-            const cardY = height / 2;
-
-            push();
-            drawingContext.shadowBlur = cardShadowBlur;
-            drawingContext.shadowColor = cardGlowColor;
-            tint(255, contentAlpha);
-            image(this.finalConstellationImage, cardX, cardY, cardW, cardH);
-            pop();
-        }
-        
-        // --- 2. 오른쪽: QR 코드, 안내 문구, 종료 버튼 그리기 ---
-        if (this.generatedQRImage && contentAlpha > 0) {
-            const qrSize = min(width / 5, height / 3);
-            const qrX = width * 3 / 4;
-            const groupCenterY = height / 2 - 40;
-            const spacing = 40;
-            const totalGroupHeight = qrSize + spacing;
-            const groupTopY = groupCenterY - totalGroupHeight / 2;
-            const qrY = groupTopY + qrSize / 2;
-            
-            const qrGlowPulse = map(sin(millis() * 0.0025 + PI), -1, 1, 0.8, 1.3);
-            const qrShadowBlur = 60 * qrGlowPulse;
-            const qrGlowColor = color(255, 255, 220, contentAlpha * 0.85);
-
-            // QR 코드 이미지 그리기
-            push();
-            drawingContext.shadowBlur = qrShadowBlur;
-            drawingContext.shadowColor = qrGlowColor;
-            tint(255, contentAlpha);
-            image(this.generatedQRImage, qrX, qrY, qrSize, qrSize);
-            pop();
-
-            // 안내 문구 그리기
-            const textHeight = width * 0.012;
-            const textY = qrY + qrSize / 2 + spacing;
-            
-            push();
-            fill(255, contentAlpha);
-            noStroke();
-            textAlign(CENTER, CENTER);
-            textSize(textHeight);
-            textStyle(BOLD);
-            text("별자리 카드를 다운로드 받으세요", qrX, textY);
-            pop();
-            
-            // 종료 버튼 그리기
-            if (buttonAlpha > 0) {
-                const scale = width / this.ORIGINAL_WIDTH;
-                const btnW = 220 * scale * 0.9;
-                const btnH = 80 * scale * 0.85;
-                const btnX = qrX - btnW / 2;
-                const btnY = textY + textHeight / 2 + 40; 
-                this.endButtonRect = { x: btnX, y: btnY, w: btnW, h: btnH };
-                const isHovering = this.isMouseOver(this.endButtonRect);
-                
-                push();
-                tint(255, isHovering ? buttonAlpha : buttonAlpha * 0.85); // 호버 시 밝게
-                image(this.images.buttonBg, this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2, this.endButtonRect.w, this.endButtonRect.h);
-                pop();
-
-                fill(isHovering ? 255 : 220, buttonAlpha);
-                noStroke();
-                textAlign(CENTER, CENTER);
-                textSize(32 * scale);
-                textStyle(NORMAL);
-                text("종료하기", this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2);
-            }
-        }
-        
-        rectMode(CORNER);
+    if (this.sceneState === 'FADING_OUT_TO_WHITE') {
+        contentAlpha = 255;
+        buttonAlpha = 255;
     }
+
+    if (contentAlpha > 0) {
+        fill(0, 0, 0, contentAlpha * 0.4);
+        rect(width / 2, height / 2, width, height);
+    }
+
+    // --- 1. 왼쪽: 별자리 카드 그리기 ---
+    if (this.finalConstellationImage && contentAlpha > 0) {
+        // [수정] 일관된 pulseTime을 사용하여 빛의 떨림을 없애고 부드럽게 만듭니다.
+        const cardGlowPulse = map(sin(pulseTime), -1, 1, 0.6, 1.1);
+        const cardShadowBlur = 40 * cardGlowPulse;
+        const cardGlowColor = color(255, 255, 220, contentAlpha * 0.6);
+
+        const cardAspectRatio = this.finalConstellationImage.width / this.finalConstellationImage.height;
+        let cardW = width * 0.4;
+        let cardH = cardW / cardAspectRatio;
+        if (cardH > height * 0.8) {
+            cardH = height * 0.8;
+            cardW = cardH * cardAspectRatio;
+        }
+        const cardX = width / 4;
+        const cardY = height / 2;
+
+        push();
+        drawingContext.shadowBlur = cardShadowBlur;
+        drawingContext.shadowColor = cardGlowColor;
+        tint(255, contentAlpha);
+        image(this.finalConstellationImage, cardX, cardY, cardW, cardH);
+        pop();
+    }
+    
+    // --- 2. 오른쪽: QR 코드, 안내 문구, 종료 버튼 그리기 ---
+    if (this.generatedQRImage && contentAlpha > 0) {
+        const qrSize = min(width / 5, height / 3);
+        const qrX = width * 3 / 4;
+        const groupCenterY = height / 2 - 40;
+        const spacing = 40;
+        const totalGroupHeight = qrSize + spacing;
+        const groupTopY = groupCenterY - totalGroupHeight / 2;
+        const qrY = groupTopY + qrSize / 2;
+
+        // [수정] 카드의 반대 위상으로 부드럽게 빛나도록 수정합니다. (pulseTime + PI)
+        const qrGlowPulse = map(sin(pulseTime + PI), -1, 1, 0.8, 1.3);
+        const qrShadowBlur = 60 * qrGlowPulse;
+        const qrGlowColor = color(255, 255, 220, contentAlpha * 0.85);
+
+        push();
+        drawingContext.shadowBlur = qrShadowBlur;
+        drawingContext.shadowColor = qrGlowColor;
+        tint(255, contentAlpha);
+        image(this.generatedQRImage, qrX, qrY, qrSize, qrSize);
+        pop();
+        
+        const textHeight = width * 0.012;
+        const textY = qrY + qrSize / 2 + spacing;
+        
+        push();
+        fill(255, contentAlpha);
+        textAlign(CENTER, CENTER);
+        textSize(textHeight);
+        textStyle(BOLD);
+        text("별자리 카드를 다운로드 받으세요", qrX, textY);
+        pop();
+        
+        if (buttonAlpha > 0) {
+            const scale = width / this.ORIGINAL_WIDTH;
+            const btnW = 220 * scale * 0.9;
+            const btnH = 80 * scale * 0.85;
+            const btnX = qrX - btnW / 2;
+            const btnY = textY + textHeight / 2 + 40;
+            this.endButtonRect = { x: btnX, y: btnY, w: btnW, h: btnH };
+            const isHovering = this.isMouseOver(this.endButtonRect);
+            
+            push();
+            tint(255, isHovering ? buttonAlpha : buttonAlpha * 0.85);
+            image(this.images.buttonBg, this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2, this.endButtonRect.w, this.endButtonRect.h);
+            pop();
+
+            fill(isHovering ? 255 : 220, buttonAlpha);
+            textAlign(CENTER, CENTER);
+            textSize(32 * scale);
+            textStyle(NORMAL);
+            text("종료하기", this.endButtonRect.x + this.endButtonRect.w / 2, this.endButtonRect.y + this.endButtonRect.h / 2);
+        }
+    }
+    
+    rectMode(CORNER);
+}
     
     /**
      * 배경에 움직이는 별과 별자리를 그립니다.

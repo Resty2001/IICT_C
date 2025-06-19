@@ -623,6 +623,9 @@ class IntroScene {
         if (currentDialogue.speaker === '공방지기') {
             const newImgKey = currentDialogue.image;
             if (newImgKey !== this.lastKeeperImgKey) {
+                if (this.lastKeeperImgKey === null && this.sounds.smallLaugh) {
+                    this.sounds.smallLaugh.play();
+                }
                 this.previousKeeperImg = this.images[this.lastKeeperImgKey];
                 this.currentKeeperImg = this.images[newImgKey];
                 this.keeperFadeStartTime = millis();
@@ -775,7 +778,7 @@ class IntroScene {
                 return;
             }
 
-            let targetVolume = constrain(map(d, 0, maxDist, 0.2, 0.0), 0.0, 1.4);
+            let targetVolume = constrain(map(d, 0, maxDist, 0.8, 0.0), 0.0, 1.4);
             let finalVolume = targetVolume;
 
             if (this.auraFadeInStartTime > 0) {
