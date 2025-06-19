@@ -1,8 +1,8 @@
 class Particle {
-  constructor(x, y) {
+  constructor(x, y, radius = random(3,5))  {
     this.x = x;
     this.y = y;
-    this.radius = random(3,5);
+    this.radius = radius;
     this.alpha = 255;
     this.vx = random(-1, 1);
     this.vy = random(-1, 1);
@@ -29,9 +29,10 @@ function createParticleManager() {
   return {
     particles: [],
 
-    add(x, y, count = 5) {
+    add(x, y, count = 5, radius = null) {
       for (let i = 0; i < count; i++) {
-        this.particles.push(new Particle(x, y));
+        const r = radius ?? random(3, 5);
+        this.particles.push(new Particle(x, y,r));
       }
     },
 
@@ -159,7 +160,7 @@ class Choosing {
     this.storyTextBoxRect = {
       // 텍스트 박스 자체를 중앙에 위치시키기 위한 x, y (text()의 중앙정렬과 별개)
       x: width / 2,
-      y: height * 9 / 17, // 원본 코드의 this.boxY와 동일한 비율로 유지
+      y: height * 5 / 9, // 원본 코드의 this.boxY와 동일한 비율로 유지
       w: width * 0.8,    // 화면 너비의 80%를 사용 (조절 가능)
       h: 160 * scaleY   // 원본 높이 160px을 화면 비율에 맞게 스케일
     };
@@ -480,7 +481,7 @@ const fullDialogue = texts[this.idx]; // connecting.js의 경우: const fullDial
         if (fontDanjo) {
             textFont(fontDanjo);
         }
-        const currentTextSize = this.fontSize * 1.1;
+        const currentTextSize = this.fontSize;
         textSize(currentTextSize);
 
          const textW = textWidth(this.displayedText); // 현재 텍스트의 너비 계산
@@ -496,7 +497,7 @@ const fullDialogue = texts[this.idx]; // connecting.js의 경우: const fullDial
             const rectX = this.storyTextBoxRect.x;
             const rectY = this.storyTextBoxRect.y;
             const rectW = textW + paddingX;
-            const rectH = textH + paddingY;
+            const rectH = textH + paddingY/2;
 
             push();
             rectMode(CENTER);

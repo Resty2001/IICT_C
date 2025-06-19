@@ -12,14 +12,14 @@ const starStories = ["본질을 인내로 파고들어, 무형의 아이디어�
 "현실의 틀을 넘어 상상의 날개로 미래를 그리고, 가능성을 꿈꾸는 창조적 비전가",
 "소중한 것을 지키기 위해 헌신하며, 책임감과 충성심으로 공동체를 보호하는 믿음직한 방어자"
 ];
-const minDist = 50;
 
 class Connecting{
     // ⭐ constructor 설정 수정: onConstellationCompleteCallback 추가 ⭐
-    constructor(selectedCard, nameResult, keeperImages, textBoxImage, updateSceneNumberCallback, onConstellationCompleteCallback, starImages, newStarImage, sounds){
+    constructor(selectedCard, nameResult, keeperImages, textBoxImage, updateSceneNumberCallback, onConstellationCompleteCallback, starImages, newStarImage, sounds, button){
         this.selectedCard = selectedCard;
         this.newStarImage = newStarImage;
         this.nameResult = nameResult;
+        this.button = button;
         this.storyResult = "";
         this.textBox = textBoxImage;
         this.updateSceneNumber = updateSceneNumberCallback; // 씬 넘버 업데이트 콜백
@@ -55,10 +55,27 @@ class Connecting{
         this.textInterval = 2;
         this.sounds = sounds; // sounds 객체 저장
         this.starbgm = null; // 선택된 카드의 BGM 키를 저장할 변수
+        this.hoveredCardTargetScale = 1;      // 호버된 카드의 목표 스케일
+        this.hoveredCardCurrentScale = 1;     // 호버된 카드의 현재 스케일
+        this.hoveredCardTargetOffsetY = 0;    // 호버된 카드의 목표 Y축 이동 (위로 올라오는 효과)
+        this.hoveredCardCurrentOffsetY = 0;   // 호버된 카드의 현재 Y축 이동
+        this.hoverAnimationSpeed = 0.1;       // 애니메이션 속도 (0에 가까울수록 느림)
+        this.hoverScaleAmount = 1.1;          // 확대될 크기 (원래 크기의 1.1배)
+        this.hoverOffsetYAmount = 30;  
+        this.cardFlyParticle = null;
+this.isCardFlyAnimationPlaying = false;
+this.cardFlyY = 0;
+this.cardFlyStartX = 0;
+this.cardFlyStartY = 0;
+
+this.isLightRainPlaying = false;
+this.lightRainParticles = [];
+this.rainEndCallbackCalled = false;
 
         // --- References for scaling ---
         this.ORIGINAL_WIDTH = 1920;
         this.ORIGINAL_HEIGHT = 1080;
+this.minDist = windowWidth*windowHeight/50000;
         // ---
 
         // UI 요소들의 rect 객체를 선언합니다.
@@ -89,14 +106,16 @@ this.hoveredCardIndex = -1;
             this.starImage = this.starImages[matchedIndex];
             this.storyResult = starStories[matchedIndex];
         }
-        
-        for (let i = 0; i<this.selectedCard.length; i++)
+
+        for (let i = 0; i < this.selectedCard.length; i++) {
             this.starPositions.push({
-                x: this.selectedCard[i].star.x, // Removed modulo, assuming direct match
-                y: this.selectedCard[i].star.y, // Removed modulo, assuming direct match
+                x: this.selectedCard[i].star.x,
+                y: this.selectedCard[i].star.y,
                 alpha: 0,
-                sparkleTimer: 0,
+                sparkleTimer: random(0, 500), // 각 별의 반짝임 시작 타이밍을 다르게 설정
+                isExtra: false
             });
+        }
         this.keeperDialogue = ["당신의 기억들이 빚어낸 밑그림이 완성됐습니다.\n희미한 빛 속에서도 " + this.nameResult + "의 영혼이 선명하게 느껴지는군요. ",
     "자, 이제 밤하늘의 별자리를 완성해 볼까요?",
     "....................",
@@ -170,38 +189,119 @@ this.hoveredCardIndex = -1;
         this.textPaddingX = 100 * scaleX; // 텍스트 박스 좌우 패딩
         this.textPaddingY = 60 * scaleY; // 텍스트 박스 상하 패딩
         this.starNameTextSize = this.fontSize * 1.5; // 별 이름 폰트 크기 (스토리 텍스트의 1.5배)
+this.activeLines = []; // 활성화된 선의 상태(연결된 별, alpha값)를 저장할 배열
+        this.lineFadeInSpeed = 5;
     }
     
 
 
-    update(){
-     this.setupUIElements();
+    update() {
+    this.setupUIElements();
+    if (this.isCardFlyAnimationPlaying) {
+  this.cardFlyY -= height/200; // 위로 올라감
+  particleManager.add(this.cardFlyStartX, this.cardFlyY, 7, 5); // 반짝이 효과
+  if (this.cardFlyY < -50) {
+    this.isCardFlyAnimationPlaying = false;
 
-  if (this.keeperState === "showing") {
-    this.keeperAlpha = min(255, this.keeperAlpha + this.keeperFadeInSpeed);
-    if (this.keeperAlpha === 255 && this.keeperText === this.keeperDialogue[this.index]) {
-      this.keeperState = "waiting";
-    }
+    // 0.5초 뒤에 빛의 비 애니메이션 시작
+    setTimeout(() => {
+      this.startLightRain();
+    }, 500);
   }
-        for (let i = 0; i < this.starPositions.length; i++) {
-            this.starPositions[i].alpha = min(255, this.starPositions[i].alpha + 2);
-        }
-if (this.hoveredCardIndex !== -1 || this.hoveredExtraStarIndex !== -1) {
-            this.glowAlpha = min(this.maxGlowAlpha, this.glowAlpha + this.glowSpeed);
-        } else {
-            this.glowAlpha = max(0, this.glowAlpha - this.glowSpeed);
+}
+
+// --- 빛의 비 애니메이션 ---
+if (this.isLightRainPlaying) {
+  for (let rain of this.lightRainParticles) {
+    rain.y += rain.speed;
+    rain.alpha -= 2;
+  }
+
+  // 파티클 렌더링
+  this.lightRainParticles = this.lightRainParticles.filter(r => r.alpha > 0);
+  for (let rain of this.lightRainParticles) {
+    noStroke();
+    fill(255, 255, 200, rain.alpha);
+    ellipse(rain.x, rain.y, 5, 20);
+  }
+
+  // 애니메이션 종료 시 다음 진행 허용
+  if (this.lightRainParticles.length === 0 && !this.rainEndCallbackCalled) {
+    this.rainEndCallbackCalled = true;
+    this.preventNextAction = false; // 다음 로직 허용
+    if (this.sounds.firework && this.sounds.firework.isPlaying()) {
+            this.sounds.firework.stop();
         }
-    }
+        if (this.sounds.switchingBgm && this.sounds.switchingBgm.isLoaded()) {
+        this.sounds.switchingBgm.play();
+        }
+              this.index++; // Move to next stage after card selection
+          this.keeperState = "showing"; // Show keeper dialogue for next stage
+  }
+}
+
+    if (this.keeperState === "showing") {
+        this.keeperAlpha = min(255, this.keeperAlpha + this.keeperFadeInSpeed);
+        if (this.keeperAlpha === 255 && this.keeperText === this.keeperDialogue[this.index]) {
+            this.keeperState = "waiting";
+        }
+    }
+
+    // ⭐ 수정된 부분: 모든 별에 대해 반짝임 및 파티클 효과를 적용합니다.
+    const allStars = [...this.starPositions, ...this.extraStarPositions];
+        if(this.index>=1){
+    for (let star of allStars) {
+        // 드래그 중인 별은 반짝이지 않도록 처리
+        const isDraggingThis = this.draggingStar !== null && this.extraStarPositions[this.draggingStar] === star;
+
+        if (!isDraggingThis) {
+            star.sparkleTimer++; // 타이머 증가
+            // sin 함수를 이용해 alpha값을 주기적으로 변경하여 반짝임 효과 구현
+            star.alpha = map(sin(star.sparkleTimer * 0.05), -1, 1, 100, 255);
+
+            // 주기적으로 파티클 생성
+            if (star.sparkleTimer % 10 === 0) {
+                particleManager.add(star.x, star.y, 1);
+            }
+        }
+      }
+      particleManager.updateAndShow();
+    }
+
+    if (this.hoveredCardIndex !== -1 || this.hoveredExtraStarIndex !== -1) {
+        this.glowAlpha = min(this.maxGlowAlpha, this.glowAlpha + this.glowSpeed);
+    } else {
+        this.glowAlpha = max(0, this.glowAlpha - this.glowSpeed);
+    }
+    this.hoveredCardCurrentScale = lerp(
+            this.hoveredCardCurrentScale,
+            this.hoveredCardTargetScale,
+            this.hoverAnimationSpeed
+        );
+        // 현재 Y 오프셋을 목표 Y 오프셋으로 부드럽게 보간
+        this.hoveredCardCurrentOffsetY = lerp(
+            this.hoveredCardCurrentOffsetY,
+            this.hoveredCardTargetOffsetY,
+            this.hoverAnimationSpeed
+        );
+
+    // ⭐ 추가된 부분: 파티클 매니저를 업데이트하고 화면에 표시합니다.
+}
 
     show() {
         this.cardRects = [];
         if (this.index == 3 && this.keeperState == "done") {
+  if(!this.preventNextAction){
             if (!this.cardsFullyVisible && this.cardAlpha < 255) {
                 this.cardAlpha += 10;
             }
             if (this.cardAlpha >= 255) {
                 this.cardsFullyVisible = true;
             }
+  }
+  else{
+    this.cardAlpha -= 1;
+  }
             for (let i = 0; i < this.selectedCard.length; i++) {
                 let x = this.cardWidth/4 + (this.cardWidth * 1.5) * i;
       let y = windowHeight - this.cardHeight - windowHeight / 20;
@@ -210,21 +310,17 @@ if (this.hoveredCardIndex !== -1 || this.hoveredExtraStarIndex !== -1) {
                 this.cardRects.push({ x, y, w, h, index: i });
                 
                 push();
-                    translate(x + w / 2, y + h / 2);
-                    scale(1);
+                    if (this.hoveredCardIndex === i) {
+                    translate(x + w / 2, y + h / 2 + this.hoveredCardCurrentOffsetY); // Y 오프셋 적용
+                    scale(this.hoveredCardCurrentScale); // 스케일 적용
+                } else {
+                    translate(x + w / 2, y + h / 2); // 원래 위치
+                    scale(1); // 원래 스케일
+                }
                     let card = this.selectedCard[i];
                     tint(255, this.cardAlpha);
                     this.drawCardFront(0, 0, w, h, card.image, card.text, this.cardAlpha);
                 pop();
-if (this.hoveredCardIndex === i && this.glowAlpha > 0) {
-                    push();
-                    noFill();
-                    stroke(255, this.glowAlpha); // Yellowish glow
-                    strokeWeight(15);
-                    rectMode(CENTER);
-                    rect(x + w / 2, y + h / 2, w + 10, h + 10, 8); // Slightly larger rect
-                    pop();
-                }
             }
         }
 
@@ -246,48 +342,51 @@ if (this.hoveredCardIndex === i && this.glowAlpha > 0) {
             for (let i = 0; i < this.starPositions.length; i++) {
                 let s = this.starPositions[i];
                 push();
-                tint(255, 255);
+                // ⭐ 수정된 부분: tint에 고정값 대신 별의 alpha 속성을 사용합니다.
+                tint(255, s.alpha);
                 image(this.newStarImage,s.x, s.y, windowWidth * windowHeight / 30000,windowWidth * windowHeight / 30000);
                 pop();
             }
             // 별자리 선 그리기
             this.drawLines();
-
-            this.displayStarName();
+            if(this.keeperState === "done"){
+              this.displayStarName();
+            }
 
             // 추가된 별 시각화 (카드를 선택했을 때)
-            if (this.isCardSelected === true) {
-                this.displayStory(); // Call after displayStarName to ensure layering
+            if (this.isCardSelected === true ) {
+  if(this.preventNextAction === false){
+      this.displayStory(); 
+  }
                 for (let i = 0; i < this.extraStarPositions.length; i++) {
+                    let extraStar = this.extraStarPositions[i];
 if (this.hoveredExtraStarIndex === i && this.glowAlpha > 0) {
-                        push();
-                        fill(255, this.glowAlpha);
-                        noStroke(); // Yellowish glow
-                        ellipse(this.extraStarPositions[i].x, this.extraStarPositions[i].y, windowWidth * windowHeight / 30000); // Slightly larger ellipse
-                        pop();
-                    }
-                    image(this.newStarImage, this.extraStarPositions[i].x, this.extraStarPositions[i].y,windowWidth*windowHeight/20000,windowWidth*windowHeight/20000);
-                }
+                        push();
+                        fill(255, this.glowAlpha);
+                        noStroke();
+                        ellipse(extraStar.x, extraStar.y, windowWidth * windowHeight / 40000);
+                        pop();
+                    }
+                    // ⭐ 수정된 부분: 새로 추가된 별도 alpha값을 적용하여 tint 처리합니다.
+                    push();
+                    tint(255, extraStar.alpha);
+                    image(this.newStarImage, extraStar.x, extraStar.y, windowWidth*windowHeight/20000, windowWidth*windowHeight/20000);
+                    pop();
+                }
             }
 
-            // Index 1에서 키퍼 대화 상태 전환
-            if (this.index === 1 && this.starPositions.every(s => s.alpha >= 255)) {
-                this.keeperState = "showing";
-            }
         }
 
         // "별자리 완성" 버튼 (Index 5에서만 등장)
         if (this.index === 5) {
             push();
-            fill(255, 180);
-            stroke(255);
-            rectMode(CENTER); // 버튼을 중앙 정렬로 그리기 위해 추가
-            rect(width * 5 / 6, height * 12 / 13, 160, 100, 10);
-            fill(0);
+            imageMode(CENTER); // 버튼을 중앙 정렬로 그리기 위해 추가
+            image(this.textBox, width/2, height*12/13, width/13, height/12);
+            fill(255, 215, 0);
             textAlign(CENTER, CENTER);
             noStroke();
-            textSize(20);
-            text("별자리 완성", width * 5/ 6, height * 12 / 13);
+            textSize(this.fontSize*0.6);
+            text("별자리 완성", width /2, height * 12 / 13);
             pop();
         }
 
@@ -314,7 +413,9 @@ handleMousePressed() {
     w: this.dialogueBoxRect.w,
     h: this.dialogueBoxRect.h
   };
+  if (this.preventNextAction) return; // 애니메이션 중이면 무시
 
+if(this.keeperState != "done"){
   // Check if the click is within the keeper's text box
   if (mouseX > textBoxRect.x && mouseX < textBoxRect.x + textBoxRect.w &&
       mouseY > textBoxRect.y && mouseY < textBoxRect.y + textBoxRect.h) {
@@ -331,8 +432,16 @@ handleMousePressed() {
         // If typing is finished and keeper is waiting for a click to advance
         // 👉 1. keeper 안내 문구 클릭 시 다음으로 넘어감
         if (this.index === 0 || this.index === 1 || this.index === 2 || this.index === 4) {
-          this.keeperState = "showing"; // Transition to showing to fade in next text
-          this.index++; // Increment dialogue index
+                    this.index++; // Increment dialogue index
+          if (this.index === 1) {
+            this.keeperState = "done";
+               setTimeout(() => {
+                this.keeperState = "showing";
+               }, 500);
+            }else{
+this.keeperState = "showing"; // Transition to showing to fade in next text
+
+}
         } else {
           this.keeperState = "done"; // All keeper dialogues for this stage are done
           if (this.index === 6) { // Assuming this is the final index for a scene transition
@@ -350,70 +459,83 @@ handleMousePressed() {
     }
     return; // Consume the click, do not process other mousePressed logic below
   }
+}
 
   // --- Existing Logic for Card Selection (only processed if keeperState is "done") ---
   if (this.keeperState == "done") {
     // 👉 2. 카드 선택 (index 3에서 보여지고 선택 가능)
     if (!this.isCardSelected && this.cardRects) {
-       for (let i = 0; i < this.cardRects.length; i++) {
-
-                const rect = this.cardRects[i];
-
+       for(let card of this.cardRects){
                 // rectMode(CENTER)로 카드를 그렸으므로 클릭 영역도 맞춰줍니다.
-
-                if (
-
-                    mouseX >= rect.x + rect.w/2 - this.cardWidth/2 &&
-
-                    mouseX <= rect.x + rect.w/2 + this.cardWidth/2 &&
-
-                    mouseY >= rect.y + rect.h/2 - this.cardHeight/2 &&
-
-                    mouseY <= rect.y + rect.h/2 + this.cardHeight/2
-
-                ){
-          this.favoriteCard.push(this.selectedCard[rect.index]);
+                    if (mouseX >= card.x && mouseX <= card.x + card.w&&
+                mouseY >= card.y && mouseY <= card.y + card.h) {
+          this.favoriteCard.push(this.selectedCard[card.index]);
           this.isCardSelected = true;
+          this.startCardFlyAnimation(mouseX, mouseY);
 
           this.changeStarColor(); // Call your star color change function
           this.changeBGM();
 
           let newStar;
           let maxTries = 100;
-          let minDist = 50; // You need to define minDist if it's not global or a class property.
-                            // Assuming it's defined elsewhere or you'll add it.
 
           for(let k = 0; k < 4; k++) { // Loop to generate 4 extra stars
-            for (let tries = 0; tries < maxTries; tries++) {
-              let tempStar = {
-                // Adjust random generation to be within the starImageRect area
-                x: random(this.starImageRect.x - this.starImageRect.w / 2 + 50, this.starImageRect.x + this.starImageRect.w / 2 - 50),
-                y: random(this.starImageRect.y - this.starImageRect.h / 2 + 50, this.starImageRect.y + this.starImageRect.h / 2 - 50),
-              };
+            for (let tries = 0; tries < maxTries; tries++) {
+              // ⭐ 수정된 부분: tempStar 객체에 alpha와 sparkleTimer 속성을 추가합니다.
+              let tempStar = {
+                x: random(this.starImageRect.x - this.starImageRect.w / 2 + 50, this.starImageRect.x + this.starImageRect.w / 2 - 50),
+                y: random(this.starImageRect.y - this.starImageRect.h / 2 + 50, this.starImageRect.y + this.starImageRect.h / 2 - 50),
+                alpha: 255, // 새로 생긴 별은 바로 보이도록 설정
+                sparkleTimer: random(0, 500), // 반짝임 시작 타이밍 무작위 설정
+                isExtra: true
+              };
 
-              let tooCloseToMain = this.starPositions.some(
-                (s) => dist(s.x, s.y, tempStar.x, tempStar.y) < minDist
-              );
+              let tooCloseToMain = this.starPositions.some(
+                (s) => dist(s.x, s.y, tempStar.x, tempStar.y) < this.minDist
+              );
 
-              let tooCloseToExtra = this.extraStarPositions.some(
-                (s) => dist(s.x, s.y, tempStar.x, tempStar.y) < minDist
-              );
+              let tooCloseToExtra = this.extraStarPositions.some(
+                (s) => dist(s.x, s.y, tempStar.x, tempStar.y) < this.minDist
+              );
 
-              if (!tooCloseToMain && !tooCloseToExtra) {
-                newStar = tempStar;
-                this.extraStarPositions.push(newStar);
-                break; // Found a valid position, break from inner tries loop
-              }
-            }
-          }
-          this.index++; // Move to next stage after card selection
-          this.keeperState = "showing"; // Show keeper dialogue for next stage
+              if (!tooCloseToMain && !tooCloseToExtra) {
+                newStar = tempStar;
+                this.extraStarPositions.push(newStar);
+                break; // Found a valid position, break from inner tries loop
+              }
+            }
+          }
           break; // Card was selected, exit loop
         }
       }
     }
   }
 }
+startCardFlyAnimation(startX, startY) {
+  this.isCardFlyAnimationPlaying = true;
+  this.cardFlyStartX = startX;
+  this.cardFlyStartY = startY;
+  this.cardFlyY = startY;
+
+  // 카드 선택 이후 다음 로직 일시 정지 (예: 2초 후 계속되도록)
+  this.preventNextAction = true;
+}
+startLightRain() {
+  this.isLightRainPlaying = true;
+  this.lightRainParticles = [];
+
+  let rainCount = 50;
+  for (let i = 0; i < rainCount; i++) {
+    this.lightRainParticles.push({
+      x: random(width),
+      y: random(-200, -10),
+      speed: random(4, 8),
+      alpha: 255
+    });
+  }
+}
+
+
     // ⭐ mouseDragged() 함수 수정: 드래그 중인 별 위치 실시간 업데이트 ⭐
     mouseDragged() {
         if (this.index === 5 && this.isCardSelected) { // Index 5에서만 드래그 가능
@@ -424,7 +546,7 @@ handleMousePressed() {
                 for (let i = 0; i < this.extraStarPositions.length; i++) {
                     let s = this.extraStarPositions[i];
                     // 별의 크기가 30px이므로 반지름 15px. 클릭 영역을 좀 더 넓게 줍니다.
-                    if (dist(mouseX, mouseY, s.x, s.y) < 20) { // 20px 반경 내 클릭 시 드래그 시작
+                    if (dist(mouseX, mouseY, s.x, s.y) < windowWidth*windowHeight/40000) { // 20px 반경 내 클릭 시 드래그 시작
                         this.draggingStar = i;
                         // 드래그 시작 시 초기 위치 저장
                         this.initialStarPosition = { x: s.x, y: s.y };
@@ -493,7 +615,7 @@ mouseReleased() {
                     if (i !== this.draggingStar) allStars.push(star);
                 });
                 for (let s of allStars) {
-                    if (dist(s.x, s.y, dragged.x, dragged.y) < minDist) {
+                    if (dist(s.x, s.y, dragged.x, dragged.y) < this.minDist) {
                         isValidPosition = false;
                         break;
                     }
@@ -510,8 +632,8 @@ mouseReleased() {
 
         // "별자리 완성" 버튼 클릭 로직
         const btnBox = {
-             x: width * 5 / 6, y: height * 12 / 13,
-             w: 160, h: 100
+             x: width /2, y: height * 12 / 13,
+             w: width/13, h: height/12
         };
 
         if (mouseX >= btnBox.x - btnBox.w / 2 && mouseX <= btnBox.x + btnBox.w / 2 &&
@@ -588,19 +710,24 @@ mouseReleased() {
             for (let i = 0; i < this.cardRects.length; i++) {
                 const rect = this.cardRects[i];
                 if (
-                    mouseX >= rect.x + rect.w/2 - this.cardWidth/2 &&
-                    mouseX <= rect.x + rect.w/2 + this.cardWidth/2 &&
-                    mouseY >= rect.y + rect.h/2 - this.cardHeight/2 &&
-                    mouseY <= rect.y + rect.h/2 + this.cardHeight/2
+                    mouseX >= rect.x &&
+                    mouseX <= rect.x + this.cardWidth &&
+                    mouseY >= rect.y &&
+                    mouseY <= rect.y + this.cardHeight
                 ) {
                     this.hoveredCardIndex = i;
                     cardHovered = true;
+                    // ⭐ 마우스 오버 시 목표 스케일 및 오프셋 설정 ⭐
+                    this.hoveredCardTargetScale = this.hoverScaleAmount;
+                    this.hoveredCardTargetOffsetY = -this.hoverOffsetYAmount; // 위로 이동 (-Y)
                     break;
                 }
             }
         }
         if (!cardHovered) {
             this.hoveredCardIndex = -1;
+            this.hoveredCardTargetScale = 1;
+            this.hoveredCardTargetOffsetY = 0;
         }
 
         // 마우스가 별 위에 있으면 별이 더 밝아짐
@@ -608,7 +735,7 @@ mouseReleased() {
         if (this.index === 5 && this.isCardSelected && !this.draggingStar) {
             for (let i = 0; i < this.extraStarPositions.length; i++) {
                 let s = this.extraStarPositions[i];
-                if (dist(mouseX, mouseY, s.x, s.y) < 20) { // 20px radius for hover detection
+                if (dist(mouseX, mouseY, s.x, s.y) < windowWidth*windowHeight/40000) { // 20px radius for hover detection
                     this.hoveredExtraStarIndex = i;
                     starHovered = true;
                     break;
@@ -690,6 +817,7 @@ fill(255, this.keeperAlpha);
 }
     drawLines() {
         let existingLines = [];
+const num = 3;
         // 기본 별들과 추가 별들을 모두 포함
         const allCurrentStars = [...this.starPositions, ...this.extraStarPositions];
 
@@ -699,7 +827,7 @@ fill(255, this.keeperAlpha);
                 let b = allCurrentStars[j];
 
                 let d = dist(a.x, a.y, b.x, b.y);
-                if (d < 500) { // 선을 연결할 최대 거리
+                if (d < this.minDist*5) { // 선을 연결할 최대 거리
                     // 교차 확인 로직 (선이 겹치지 않도록)
                     let intersects = false;
                     for (let k = 0; k < existingLines.length; k++) {
@@ -714,8 +842,14 @@ fill(255, this.keeperAlpha);
                         existingLines.push({ a, b });
                         push();
                         stroke(this.starColor, 180);
-                        strokeWeight(10);
+                        strokeWeight(windowWidth*windowHeight/1500000);
                         line(a.x, a.y, b.x, b.y);
+for (let i = 0; i <= num; i++) {
+    let t = i / num; // 0부터 1 사이의 값 (선 위에서의 위치)
+    let pointX = lerp(a.x, b.x, t);
+    let pointY = lerp(a.y, b.y, t);
+    particleManager.add(pointX, pointY, 1, 1);
+}
                         pop();
                     }
                 }
@@ -735,38 +869,62 @@ fill(255, this.keeperAlpha);
         );
     }
 
-    cardAnimation(){
-        // 카드 선택 시 애니메이션 관리 (구현 예정)
-    }
-
     changeStarColor(){
         this.starColor = this.favoriteCard[0].colour;
     }
 
       changeBGM() {
-        // 이전에 재생되던 공방 BGM을 정지합니다.
-        if (this.sounds.bgm_1 && this.sounds.bgm_1.isPlaying()) {
-            this.sounds.bgm_1.stop();
-        }
-
-        if (this.sounds.switchingBgm && this.sounds.switchingBgm.isLoaded()) {
-        this.sounds.switchingBgm.play();
+    // 1. 🔥 firework 효과음은 즉시 재생
+    if (this.sounds.firework && this.sounds.firework.isLoaded()) {
+        this.sounds.firework.setVolume(0.7);
+        this.sounds.firework.play();
     }
-    
+
+    // 2. 🔉 기존 bgm_1은 자연스럽게 페이드 아웃
+    if (this.sounds.bgm_1 && this.sounds.bgm_1.isPlaying()) {
+        let bgm = this.sounds.bgm_1;
+        let currentVolume = 1.0;
+        let fadeOutInterval = setInterval(() => {
+            currentVolume -= 0.05;
+            currentVolume = max(0, currentVolume);
+            bgm.setVolume(currentVolume);
+
+            if (currentVolume <= 0) {
+                clearInterval(fadeOutInterval);
+                bgm.stop();
+            }
+        }, 100); // 약 2초 페이드 아웃
+    }
+
+    // 3. 🎵 8초 후 starbgm 재생 (볼륨 0 → 1로 페이드 인)
     setTimeout(() => {
         this.starbgm = this.favoriteCard[0].bgm;
-        
+
         if (this.starbgm && this.sounds[this.starbgm]) {
             const newBgm = this.sounds[this.starbgm];
-            if (newBgm.isLoaded() && !newBgm.isPlaying()) {
-                newBgm.setVolume(1.0);
-                newBgm.loop();
-                console.log("BGM 변경 완료:", this.starbgm);
+
+            if (newBgm.isLoaded()) {
+                newBgm.setVolume(0); // 처음엔 무음으로 시작
+                newBgm.loop(); // 반복 재생
+
+                // 페이드 인: 0 → 1 볼륨
+                let fadeVolume = 0;
+                const fadeInInterval = setInterval(() => {
+                    fadeVolume += 0.05;
+                    fadeVolume = min(1.0, fadeVolume);
+                    newBgm.setVolume(fadeVolume);
+
+                    if (fadeVolume >= 1.0) {
+                        clearInterval(fadeInInterval);
+                    }
+                }, 100); // 약 2초 페이드 인
+            } else {
+                console.error("starbgm 로드 실패:", this.starbgm);
             }
         } else {
-            console.error("BGM 키를 찾지 못했거나, 로드되지 않았습니다:", this.starbgm);
+            console.error("BGM 키를 찾을 수 없거나 존재하지 않습니다:", this.starbgm);
         }
-    }, 4000); // 5초 딜레이
+    }, 8000); // 8초 딜레이 후 starbgm 재생
 }
 
     displayStarName() {
@@ -784,6 +942,9 @@ fill(255, this.keeperAlpha);
     // For example, slightly above the story text box or as a heading within it.
     let nameX = this.keeperRect.x;
     let nameY = this.keeperRect.y*9/10;
+    if (this.index >= 4){
+      nameY = this.keeperRect.y;
+    }
         text(
             this.nameResult.trim() + "자리",
             nameX,
@@ -807,7 +968,7 @@ fill(255, this.keeperAlpha);
     textAlign(CENTER, CENTER); // 스토리 텍스트는 중앙 정렬 유지
 
       let textDrawX = this.storyTextBoxRect.x - this.storyTextBoxRect.w/2;
-      let textDrawY = this.storyTextBoxRect.y;
+      let textDrawY = this.storyTextBoxRect.y - this.storyTextBoxRect.h/2;
       let textDrawWidth = this.storyTextBoxRect.w;
       let textDrawHeight = this.storyTextBoxRect.h;
 

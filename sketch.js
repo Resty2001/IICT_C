@@ -2,7 +2,7 @@ let currentIndex = 0;
 let storyText = "";
 let nameResult = "";
 let isGenerating = false;
-let choosing,connecting, backGroundImage, textBoxImage, keeperImage, newStarImage;
+let choosing,connecting, backGroundImage, textBoxImage, newStarImage;
 let selectedWords = [];
 let imgList = [];
 let cardSets = [];
@@ -64,7 +64,6 @@ function preload() {
         loadImage("assets/card.red.png"),
         loadImage("assets/card.yellow.png")
     ]
-    keeperImage = loadImage('assets/grandpa.first.png')
     backGroundImage = loadImage("assets/Nightsky_Blank.png");
     scene2and3_bg = loadImage("assets/Nightsky_grad.png");
     introImages.startBg = loadImage('assets/startBg.png');
@@ -86,6 +85,7 @@ function preload() {
     introImages.keeper_talk1 = loadImage('assets/keepertalk1.png');
     introImages.keeper_talk2 = loadImage('assets/keepertalk2.png');
     introImages.keeper_talk3 = loadImage('assets/keepertalk3.png');
+    introImages.keeper_surprised2 = loadImage('assets/keepersurprised2.png');
     
     // --- 아웃트로용 이미지 로드 추가 ---
     fontHSBombaram = loadFont('assets/HSBombaram.ttf');
@@ -121,7 +121,8 @@ function preload() {
     sounds.mature = loadSound('assets/mature.mp3');
     sounds.happy = loadSound('assets/happy.mp3');
     sounds.wise = loadSound('assets/wise.mp3');
-
+    sounds.firework = loadSound('assets/firework.mp3');
+    
 
 
 }
@@ -131,7 +132,7 @@ function setup() {
     createCanvas(windowWidth, windowHeight);
     textFont("sans-serif");
     userStartAudio();
-    const eachColor = [color(204, 0, 0),color(255, 222, 173),color(70, 80, 150),color(180, 130, 80),color(144, 238, 144),color(220, 220, 220)];
+    const eachColor = [color(150, 30, 60),color(200, 180, 130),color(70, 80, 150),color(100, 90, 60),color(100,200,170),color(220, 220, 220)];
     // 카드 크기는 taro.png 원본 비율에 맞춰 설정하는 것이 좋습니다.
     const cardAspectRatio = 1200 / 800;
      const cardFonts = {
@@ -336,16 +337,16 @@ const updateSceneToConnecting = () => {
 };
 
     keeperImages.push(introImages.keeper_talk3);
-    keeperImages.push(introImages.keeper_smile1);
     keeperImages.push(introImages.keeper_talk1);
+    keeperImages.push(introImages.keeper_smile1);
     keeperImages.push(introImages.keeper_talk2);
-    keeperImages.push(keeperImage);
-    keeperImages.push(keeperImage);
-    keeperImages.push(keeperImage);
-    keeperImages.push(keeperImage);
-    keeperImages.push(keeperImage);
-    keeperImages.push(keeperImage);
-    keeperImages.push(keeperImage);
+    keeperImages.push(introImages.keeper_normal);
+    keeperImages.push(introImages.keeper_talk3);
+    keeperImages.push(introImages.keeper_surprised1);
+    keeperImages.push(introImages.keeper_smile2);
+    keeperImages.push(introImages.keeper_surprised2);
+    keeperImages.push(introImages.keeper_talk1);
+    keeperImages.push(introImages.keeper_smile2);
     textBoxImage = introImages.textBox;
     choosing = new Choosing(selectedCard, keeperImages, textBoxImage, updateSceneToConnecting, newStarImage, sounds);
 
@@ -382,7 +383,7 @@ function draw() {
             fill(255);
             textAlign(CENTER, CENTER);
             textSize(windowWidth*windowHeight/70000);
-            text("별을 연결하러 가는 중...", width / 2, height / 2);
+            text("별을 연결하러 가는 중...", width / 2, height*5/12);
         } else {
             // 로딩이 끝나고 최소 시간도 지났을 때 실행되는 부분
             
